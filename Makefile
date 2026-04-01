@@ -3,8 +3,8 @@ export
 
 export PROJECT_ROOT := $(shell pwd)
 
-up: docker-up backend-run
-down: docker-down backend-down
+up: docker-up frontend-up backend-up
+down: docker-down backend-down frontend-down
 
 docker-up:
 	@docker-compose up -d postgres
@@ -23,11 +23,17 @@ docker-cleanup:
 		echo "Database not deleted"; \
 	fi
 
-backend-run:
+backend-up:
 	@docker-compose up --build backend
 
 backend-down:
 	@docker-compose down backend
+
+frontend-up:
+	@docker-compose up --build frontend
+
+frontend-down:
+	@docker-compose down frontend
 
 
 migrate-create:

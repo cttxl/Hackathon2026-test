@@ -27,3 +27,14 @@ services:
     depends_on:
       - postgres
     restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./public
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
