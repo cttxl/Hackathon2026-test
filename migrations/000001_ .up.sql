@@ -1,12 +1,12 @@
-
 CREATE TABLE transport (
     id SERIAL PRIMARY KEY,
     type VARCHAR(50) NOT NULL,
     consumption INT NOT NULL,
-    max_weight INT NOT NULL,
-    max_volume INT NOT NULL,
+    max_weight DECIMAL(10, 2) NOT NULL, -- Змінено на DECIMAL
+    max_volume DECIMAL(10, 2) NOT NULL, -- Змінено на DECIMAL
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ NULL
 );
 
 CREATE TABLE warehouses (
@@ -15,18 +15,21 @@ CREATE TABLE warehouses (
     address VARCHAR(255) NOT NULL,
     city VARCHAR(100) NOT NULL,
     country VARCHAR(100) NOT NULL,
-    capacity INT NOT NULL,
+    capacity DECIMAL(12, 2) NOT NULL, -- Для об'єму складу краще DECIMAL
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ NULL
 );
 
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    weight INT NOT NULL,
-    volume INT NOT NULL,
+    sku VARCHAR(50) UNIQUE NOT NULL, -- Додано артикул
+    weight DECIMAL(10, 3) NOT NULL, -- Вага в кг
+    volume DECIMAL(10, 3) NOT NULL, -- Об'єм в м3
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ NULL
 );
 
 CREATE TABLE clients (
@@ -35,27 +38,24 @@ CREATE TABLE clients (
     email VARCHAR(100) NOT NULL UNIQUE,
     phone VARCHAR(20) NOT NULL, 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ NULL
 );
 
 CREATE TABLE employees (
-    -- GENERAL
     id SERIAL PRIMARY KEY,
     fullname VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL, -- Додано для авторизації
     phone VARCHAR(20) NOT NULL,
-    role VARCHAR(50) NOT NULL,
+    role VARCHAR(50) NOT NULL, -- 'admin', 'warehouse_operator', 'logist', 'driver'
 
-    -- Warehouse operator
     warehouse_id INT NULL,
-
-    -- Logist
-
-    -- Driver
     vehicle_id INT NULL,
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ NULL,
 
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE SET NULL,
     FOREIGN KEY (vehicle_id) REFERENCES transport(id) ON DELETE SET NULL
@@ -89,7 +89,7 @@ CREATE TABLE requests (
     id SERIAL PRIMARY KEY,
     client_point_id INT NOT NULL,
     product_id INT NOT NULL,
-    status VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, accepted, shipped, delivered, cancelled
     quantity INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -102,6 +102,7 @@ CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     transport_id INT NOT NULL,
     driver_id INT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'created', -- created, loading, in_transit, completed, cancelled
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
@@ -119,4 +120,3 @@ CREATE TABLE order_requests (
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE
 );
-

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/server"
-	"github.com/cttxl/Hackathon2026-test/internal/features/users"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -22,7 +21,6 @@ func main() {
 	srv := server.New(serverConfig)
 
 	srv.Router().Route("/api", func(r chi.Router) {
-		users.RegisterRoutes(r)
 	})
 
 	if err := srv.Run(); err != nil {
