@@ -2,11 +2,14 @@ CREATE TABLE transport (
     id SERIAL PRIMARY KEY,
     type VARCHAR(50) NOT NULL,
     consumption INT NOT NULL,
+    driver_id INT NOT NULL,
     max_weight DECIMAL(10, 2) NOT NULL, -- Змінено на DECIMAL
     max_volume DECIMAL(10, 2) NOT NULL, -- Змінено на DECIMAL
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ NULL
+    deleted_at TIMESTAMPTZ NULL,
+
+    FOREIGN KEY (driver_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
 CREATE TABLE warehouses (
@@ -51,7 +54,6 @@ CREATE TABLE employees (
     role VARCHAR(50) NOT NULL, -- 'admin', 'warehouse_operator', 'logist', 'driver'
 
     warehouse_id INT NULL,
-    vehicle_id INT NULL,
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -100,14 +102,33 @@ CREATE TABLE requests (
 
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
-    transport_id INT NOT NULL,
-    driver_id INT NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'created', -- created, loading, in_transit, completed, cancelled
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
+    FOREIGN KEY (transport_id) REFERENCES transport(id) ON DELETE CASCADE
+);
+
+CREATE TABLE arrivals (
+    id SERIAL PRIMARY KEY,
+    transport_id INT NOT NULL,
+    time_to_arrival TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
     FOREIGN KEY (transport_id) REFERENCES transport(id) ON DELETE CASCADE,
-    FOREIGN KEY (driver_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
+CREATE TABLE arrivals-orders (
+    id SERIAL PRIMARY KEY,
+    priority INT NOT NULL,
+    arrival_id INT NOT NULL,
+    order_id INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (arrival_id) REFERENCES arrivals(id) ON DELETE CASCADE,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
 
 CREATE TABLE order_requests (
