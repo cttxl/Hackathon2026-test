@@ -3,16 +3,16 @@ export
 
 export PROJECT_ROOT := $(shell pwd)
 
-up: docker-up frontend-up backend-up
-down: docker-down backend-down frontend-down
+up: postgres-up frontend-up backend-up
+down: postgres-down backend-down frontend-down
 
-docker-up:
+postgres-up:
 	@docker-compose up -d postgres
 
-docker-down:
+postgres-down:
 	@docker-compose down postgres
 
-docker-cleanup:
+postgres-cleanup:
 	@printf "Are you sure you want to delete the database? (y/n): "; \
 	read ans; \
 	if [ "$$ans" = "y" ]; then \
