@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS order_requests;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS requests;
+DROP TABLE IF EXISTS products_in_warehouses;
+DROP TABLE IF EXISTS client_points;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS clients;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS warehouses;
+DROP TABLE IF EXISTS transport;
