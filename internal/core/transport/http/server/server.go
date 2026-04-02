@@ -54,6 +54,8 @@ func New(cfg Config) *Server {
 	r.Get("/healthz", s.handleHealth)
 	r.Get("/readyz", s.handleReady)
 
+	RegisterHardcodedHandlers(r)
+
 	return s
 }
 

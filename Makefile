@@ -16,9 +16,7 @@ postgres-cleanup:
 	@printf "Are you sure you want to delete the database? (y/n): "; \
 	read ans; \
 	if [ "$$ans" = "y" ]; then \
-		echo "Deleting database..."; \
 		rm -rf $(PROJECT_ROOT)/out/pgdata; \
-		echo "Database deleted"; \
 	else \
 		echo "Database not deleted"; \
 	fi

@@ -1,5 +1,4 @@
 POST /login
-POST /role
 
 POST /employees
 GET /employees?page={page}&limit={limit}
@@ -31,7 +30,7 @@ DELETE /products/{product_id}
 
 
 POST /sku
-GET /sku?page={page}&limit={limit}&product_id={product_id}&delivery_point_id={delivery_point_id}]
+GET /sku?page={page}&limit={limit}&product_id={product_id}&delivery_point_id={delivery_point_id}
 GET /sku/{sku_id}
 PATCH /sku/{sku_id}
 DELETE /sku/{sku_id}
@@ -43,13 +42,20 @@ PATCH /requests/{request_id}
 DELETE /requests/{request_id}
 
 POST /arrivals
+POST /arrivals/schedule
 GET /arrivals?page={page}&limit={limit}&transport_id={transport_id}&driver_id={driver_id}&status={status}
 GET /arrivals/{arrival_id}
 PATCH /arrivals/{arrival_id}
 DELETE /arrivals/{arrival_id}
 
+GET /arrivals/schedule
+GET /arrivals/schedule/{schedule_id}
+PATCH /arrivals/schedule/{schedule_id}
+DELETE /arrivals/schedule/{schedule_id}
+
+
 POST /arrivals-requests
-GET /arrivals-requests/recommended?page={page}&limit={limit}&arrival_id={arrival_id}&request_id={request_id}
+GET /arrivals-requests/recommended?page={page}&limit={limit}&arrival_id={arrival_id}&request_id={request_id} ALGORITHM FOR BEST MATCH
 GET /arrivals-requests?page={page}&limit={limit}&arrival_id={arrival_id}&request_id={request_id}
 GET /arrivals-requests/{arrival_request_id}
 PATCH /arrivals-requests/{arrival_request_id}

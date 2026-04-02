@@ -1,200 +1,140 @@
-import React, { useState, useEffect } from 'react';
-
-// Models matching the Go backend hardcoded API
-interface Client {
-  id: number;
-  name: string;
-  industry: string;
-}
-
-interface Employee {
-  id: number;
-  name: string;
-  role: string;
-}
+import { useState, useEffect } from 'react';
+import './index.css';
 
 const API_BASE = 'http://localhost:8080';
 
-const App: React.FC = () => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
+const endpoints = [
+  { id: 'login', name: 'Authentication (/login)', path: '/login', method: 'POST' },
+  { id: 'employees', name: 'Employees', path: '/employees', method: 'GET' },
+  { id: 'clients', name: 'Clients', path: '/clients', method: 'GET' },
+  { id: 'points', name: 'Delivery Points', path: '/delivery-points', method: 'GET' },
+  { id: 'products', name: 'Products', path: '/products', method: 'GET' },
+  { id: 'sku', name: 'SKU Inventory', path: '/sku', method: 'GET' },
+  { id: 'requests', name: 'Orders/Requests', path: '/requests', method: 'GET' },
+  { id: 'arrivals', name: 'Arrivals', path: '/arrivals', method: 'GET' },
+  { id: 'schedule', name: 'Arrivals Schedule', path: '/arrivals-schedule', method: 'GET' },
+  { id: 'arr_req', name: 'Arrival Requests', path: '/arrivals-requests', method: 'GET' },
+  { id: 'vehicles', name: 'Vehicles', path: '/vehicles', method: 'GET' },
+];
 
-  // Form states
-  const [newClientName, setNewClientName] = useState('');
-  const [newClientIndustry, setNewClientIndustry] = useState('');
-  
-  const [newEmployeeName, setNewEmployeeName] = useState('');
-  const [newEmployeeRole, setNewEmployeeRole] = useState('');
-
-  // Fetch all initial data
-  const loadData = async () => {
-    try {
-      const [clientRes, empRes] = await Promise.all([
-        fetch(`${API_BASE}/clients`),
-        fetch(`${API_BASE}/employees`)
-      ]);
-      const clientsData = await clientRes.json();
-      const empsData = await empRes.json();
-      setClients(clientsData || []);
-      setEmployees(empsData || []);
-    } catch (err) {
-      console.error('Failed to load data', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Generic Create
-  const handleCreate = async (endpoint: string, payload: any, onSuccess: () => void) => {
-    try {
-      await fetch(`${API_BASE}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      onSuccess();
-      loadData();
-    } catch (err) {
-      console.error('Create error', err);
-    }
-  };
-
-  // Generic Update
-  const handleUpdate = async (endpoint: string, id: number, payload: any) => {
-    try {
-      await fetch(`${API_BASE}/${endpoint}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      loadData();
-    } catch (err) {
-      console.error('Update error', err);
-    }
-  };
-
-  // Generic Delete
-  const handleDelete = async (endpoint: string, id: number) => {
-    try {
-      await fetch(`${API_BASE}/${endpoint}/${id}`, {
-        method: 'DELETE'
-      });
-      loadData();
-    } catch (err) {
-      console.error('Delete error', err);
-    }
-  };
-
-  if (loading) {
-    return <div className="loading">Loading amazing API data...</div>;
-  }
-
+const DynamicCard = ({ item }: { item: any }) => {
   return (
-    <div className="container">
-      <header className="header">
-        <h1>Admin Dashboard</h1>
-      </header>
+    <div className="glass-card fade-in">
+      {Object.entries(item).map(([key, value]) => {
+        let displayValue = String(value);
+        if (typeof value === 'object' && value !== null) {
+          displayValue = JSON.stringify(value);
+        }
 
-      <div className="dashboard-grid">
-        {/* Clients Panel */}
-        <section className="panel">
-          <div className="panel-header">
-            <h2>Our Clients</h2>
-          </div>
-          
-          <div className="add-form">
-            <input 
-              type="text" className="input-field" placeholder="Client Name"
-              value={newClientName} onChange={(e) => setNewClientName(e.target.value)} 
-            />
-            <input 
-              type="text" className="input-field" placeholder="Industry"
-              value={newClientIndustry} onChange={(e) => setNewClientIndustry(e.target.value)} 
-            />
-            <button 
-              className="btn"
-              onClick={() => handleCreate('clients', { name: newClientName, industry: newClientIndustry }, () => {
-                setNewClientName('');
-                setNewClientIndustry('');
-              })}
-            >
-              Add
-            </button>
-          </div>
+        // Apply badge styling for specific status fields if any
+        if (key === 'status') {
+          return (
+            <div className="data-row" key={key}>
+              <span className="data-label">{key.replace('_', ' ')}</span>
+              <span className="data-value">
+                <span className={`status-badge ${value === 'pending' ? 'pending' : 'success'}`}>
+                  {String(value)}
+                </span>
+              </span>
+            </div>
+          );
+        }
 
-          <div className="list-container">
-            {clients.map(c => (
-              <div key={c.id} className="card">
-                <div className="card-info">
-                  <div className="card-title">{c.name}</div>
-                  <div className="card-subtitle">{c.industry}</div>
-                </div>
-                <div className="card-actions">
-                  <button className="btn" onClick={() => {
-                    const newName = prompt('Enter new name', c.name);
-                    if (newName) handleUpdate('clients', c.id, { name: newName });
-                  }}>Edit</button>
-                  <button className="btn danger" onClick={() => handleDelete('clients', c.id)}>Delete</button>
-                </div>
-              </div>
-            ))}
-            {clients.length === 0 && <p className="card-subtitle">No clients found.</p>}
+        return (
+          <div className="data-row" key={key}>
+            <span className="data-label">{key.replace(/_/g, ' ')}</span>
+            <span className="data-value">{displayValue}</span>
           </div>
-        </section>
-
-        {/* Employees Panel */}
-        <section className="panel">
-          <div className="panel-header">
-            <h2>Our Team</h2>
-          </div>
-
-          <div className="add-form">
-            <input 
-              type="text" className="input-field" placeholder="Employee Name"
-              value={newEmployeeName} onChange={(e) => setNewEmployeeName(e.target.value)} 
-            />
-            <input 
-              type="text" className="input-field" placeholder="Role"
-              value={newEmployeeRole} onChange={(e) => setNewEmployeeRole(e.target.value)} 
-            />
-            <button 
-              className="btn"
-              onClick={() => handleCreate('employees', { name: newEmployeeName, role: newEmployeeRole }, () => {
-                setNewEmployeeName('');
-                setNewEmployeeRole('');
-              })}
-            >
-              Add
-            </button>
-          </div>
-
-          <div className="list-container">
-            {employees.map(e => (
-              <div key={e.id} className="card">
-                <div className="card-info">
-                  <div className="card-title">{e.name}</div>
-                  <div className="card-subtitle">{e.role}</div>
-                </div>
-                <div className="card-actions">
-                  <button className="btn" onClick={() => {
-                    const newRole = prompt('Enter new role', e.role);
-                    if (newRole) handleUpdate('employees', e.id, { role: newRole });
-                  }}>Edit</button>
-                  <button className="btn danger" onClick={() => handleDelete('employees', e.id)}>Delete</button>
-                </div>
-              </div>
-            ))}
-            {employees.length === 0 && <p className="card-subtitle">No employees found.</p>}
-          </div>
-        </section>
-      </div>
+        );
+      })}
     </div>
   );
 };
 
-export default App;
+export default function App() {
+  const [activeTab, setActiveTab] = useState(endpoints[1]);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      setData(null);
+      try {
+        const res = await fetch(`${API_BASE}${activeTab.path}`, {
+          method: activeTab.method,
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const json = await res.json();
+        
+        // Handle standard wrapper { data: [...] } vs raw struct
+        if (json.data && Array.isArray(json.data)) {
+          setData(json.data);
+        } else {
+          // Put single object into array to reuse grid renderer
+          setData([json]); 
+        }
+      } catch (err: any) {
+        setError(err.message || 'Error connecting to backend API');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [activeTab]);
+
+  return (
+    <div className="app-container">
+      {/* Sidebar Navigation */}
+      <div className="sidebar">
+        <div className="sidebar-header">
+          Logistics API
+        </div>
+        {endpoints.map((ep) => (
+          <div
+            key={ep.id}
+            className={`nav-item ${activeTab.id === ep.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(ep)}
+          >
+            {ep.name}
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="main-content">
+        <div className="header fade-in">
+          <h1>{activeTab.name}</h1>
+          <p>Mock Data Explorer — <code>{activeTab.method} {activeTab.path}</code></p>
+        </div>
+
+        {loading && (
+          <div className="loader-container">
+            <div className="loader" />
+          </div>
+        )}
+
+        {error && (
+          <div style={{ color: 'var(--warning-color)', padding: '20px', border: '1px solid var(--warning-color)', borderRadius: '12px', background: 'rgba(245,158,11,0.1)' }}>
+            <strong>Connection Error:</strong> {error}. Ensure `make up` is running.
+          </div>
+        )}
+
+        {!loading && !error && data && (
+          <div className="grid-container">
+            {data.map((item: any, i: number) => (
+              <DynamicCard key={i} item={item} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
