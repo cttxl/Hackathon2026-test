@@ -1,5 +1,3 @@
-# Hackathon2026-test
-
 # LOCAL HOSTING GUIDE
 
 ## Prerequisites
