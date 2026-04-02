@@ -1,143 +1,150 @@
-CREATE TABLE transport (
-    id SERIAL PRIMARY KEY,
-    type VARCHAR(50) NOT NULL,
-    consumption INT NOT NULL,
-    driver_id INT NOT NULL,
-    max_weight DECIMAL(10, 2) NOT NULL, -- Змінено на DECIMAL
-    max_volume DECIMAL(10, 2) NOT NULL, -- Змінено на DECIMAL
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ NULL,
 
-    FOREIGN KEY (driver_id) REFERENCES employees(id) ON DELETE CASCADE
-);
 
-CREATE TABLE warehouses (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE vehicles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
+
+    fuel_type VARCHAR(50) NOT NULL CHECK (fuel_type IN ('diesel', 'gasoline', 'electric')),
+    fuel_consumption INT NOT NULL,
+
+    max_weight INT NOT NULL,
+    max_height INT NOT NULL,
+    max_width INT NOT NULL,
+    max_length INT NOT NULL,
+
     address VARCHAR(255) NOT NULL,
     city VARCHAR(100) NOT NULL,
-    country VARCHAR(100) NOT NULL,
-    capacity DECIMAL(12, 2) NOT NULL, -- Для об'єму складу краще DECIMAL
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ NULL
 );
 
+
 CREATE TABLE products (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
-    sku VARCHAR(50) UNIQUE NOT NULL, -- Додано артикул
-    weight DECIMAL(10, 3) NOT NULL, -- Вага в кг
-    volume DECIMAL(10, 3) NOT NULL, -- Об'єм в м3
+
+    weight INT NOT NULL,
+    height INT NOT NULL,
+    width INT NOT NULL,
+    length INT NOT NULL,
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ NULL
 );
 
 CREATE TABLE clients (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    phone VARCHAR(20) NOT NULL, 
+
+    email VARCHAR(100) NOT NULL UNIQUE CHECK (email LIKE '%@%.%'),
+    phone VARCHAR(20) NOT NULL CHECK (phone ~ '^\+[0-9]+$'),
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ NULL
 );
 
 CREATE TABLE employees (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     fullname VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL, -- Додано для авторизації
-    phone VARCHAR(20) NOT NULL,
-    role VARCHAR(50) NOT NULL, -- 'admin', 'warehouse_operator', 'logist', 'driver'
 
-    warehouse_id INT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+
+    email VARCHAR(100) NOT NULL UNIQUE CHECK (email LIKE '%@%.%'),
+    phone VARCHAR(20) NOT NULL CHECK (phone ~ '^\+[0-9]+$'),
+
+    role VARCHAR(50) NOT NULL CHECK (role IN ('driver', 'logistician', 'warehouse_manager')),
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ NULL,
-
-    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE SET NULL,
-    FOREIGN KEY (vehicle_id) REFERENCES transport(id) ON DELETE SET NULL
 );
 
-CREATE TABLE client_points (
-    id SERIAL PRIMARY KEY,
-    client_id INT NOT NULL,
+
+
+CREATE TABLE delivery_points (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    name VARCHAR(100) NOT NULL,
     address VARCHAR(255) NOT NULL,
     city VARCHAR(100) NOT NULL,
-    country VARCHAR(100) NOT NULL,
+
+    client_id UUID NOT NULL,
+
+    type VARCHAR(50) NOT NULL CHECK (type IN ('warehouse', 'client_point', 'provider')),
+
+    height INT,
+    width INT,
+    length INT,
+    
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
 );
 
-CREATE TABLE products_in_warehouses (
-    id SERIAL PRIMARY KEY,
-    product_id INT NOT NULL,
-    warehouse_id INT NOT NULL,
-    quantity INT NOT NULL,
+
+CREATE TABLE sku (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+
+    delivery_point UUID NOT NULL,
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
+    FOREIGN KEY (delivery_point) REFERENCES delivery_points(id) ON DELETE CASCADE
 );
 
 CREATE TABLE requests (
-    id SERIAL PRIMARY KEY,
-    client_point_id INT NOT NULL,
-    product_id INT NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, accepted, shipped, delivered, cancelled
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    product_id UUID NOT NULL,
     quantity INT NOT NULL,
+
+    delivery_point UUID NOT NULL,
+    emergency BOOLEAN NOT NULL,
+
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'shipped', 'delivered', 'cancelled')),
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (client_point_id) REFERENCES client_points(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (delivery_point) REFERENCES delivery_points(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
 );
 
-CREATE TABLE orders (
-    id SERIAL PRIMARY KEY,
-    status VARCHAR(50) NOT NULL DEFAULT 'created', -- created, loading, in_transit, completed, cancelled
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (transport_id) REFERENCES transport(id) ON DELETE CASCADE
-);
 
 CREATE TABLE arrivals (
-    id SERIAL PRIMARY KEY,
-    transport_id INT NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    transport UUID NOT NULL,
+    driver UUID NOT NULL,
+
     time_to_arrival TIMESTAMPTZ NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'shipped', 'delivered', 'cancelled')),
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (transport_id) REFERENCES transport(id) ON DELETE CASCADE,
+    FOREIGN KEY (transport) REFERENCES vehicles(id) ON DELETE CASCADE,
+    FOREIGN KEY (driver) REFERENCES employees(id) ON DELETE CASCADE,
 );
 
-CREATE TABLE arrivals-orders (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE arrivals_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    arrival UUID NOT NULL,
+    request UUID NOT NULL,
+
+    sku UUID[] NOT NULL,
+
     priority INT NOT NULL,
-    arrival_id INT NOT NULL,
-    order_id INT NOT NULL,
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (arrival_id) REFERENCES arrivals(id) ON DELETE CASCADE,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
-
-CREATE TABLE order_requests (
-    id SERIAL PRIMARY KEY,
-    order_id INT NOT NULL,
-    request_id INT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE
+    FOREIGN KEY (arrival) REFERENCES arrivals(id) ON DELETE CASCADE,
+    FOREIGN KEY (request) REFERENCES requests(id) ON DELETE CASCADE
+    FOREIGN KEY (sku) REFERENCES sku(id) ON DELETE CASCADE
 );
