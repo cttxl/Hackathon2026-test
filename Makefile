@@ -3,33 +3,43 @@ export
 
 export PROJECT_ROOT := $(CURDIR)
 
+ifeq ($(OS),Windows_NT)
+    DOCKER_COMPOSE := $(shell docker compose version >NUL 2>&1 && echo docker compose || echo docker-compose)
+else
+    DOCKER_COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
+endif
+
+ifeq ($(strip $(DOCKER_COMPOSE)),)
+    DOCKER_COMPOSE := docker compose
+endif
+
 up: postgres-up backend-up frontend-up
 down: postgres-down backend-down frontend-down
 
 postgres-up:
-	@docker-compose up -d postgres
+	@$(DOCKER_COMPOSE) up -d postgres
 
 postgres-down:
-	@docker-compose down postgres
+	@$(DOCKER_COMPOSE) down postgres
 
 postgres-cleanup:
 	@go run scripts/postgres_cleanup.go
 
 backend-up:
-	@docker-compose up -d --build backend
+	@$(DOCKER_COMPOSE) up -d --build backend
 
 backend-down:
-	@docker-compose down backend
+	@$(DOCKER_COMPOSE) down backend
 
 frontend-up:
-	@docker-compose up -d --build frontend
+	@$(DOCKER_COMPOSE) up -d --build frontend
 
 frontend-down:
-	@docker-compose down frontend
+	@$(DOCKER_COMPOSE) down frontend
 
 
 migrate-create:
-	@docker-compose run postgres-migrate \
+	@$(DOCKER_COMPOSE) run postgres-migrate \
 		create \
 		-ext sql \
 		-dir /migrations \
@@ -43,7 +53,7 @@ migrate-down:
 	@make migrate-action action=down
 
 migrate-action:
-	@docker-compose run --rm postgres-migrate \
+	@$(DOCKER_COMPOSE) run --rm postgres-migrate \
 		-path /migrations \
 		-database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable" \
 		$(action)

@@ -1,12 +1,12 @@
 # LOCAL HOSTING GUIDE
 
-## Prerequisites
+## Requirements
 - Docker
 - Docker Compose
 - Make
 
 ## Configuration
-Ensure your `.env` file is present in the project root with the necessary database configurations (e.g., `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`).
+Ensure your `.env` file is present in the project root with the necessary database configurations
 
 ## Running the Application
 To run the entire system (Database, Backend, and Frontend), simply run:
