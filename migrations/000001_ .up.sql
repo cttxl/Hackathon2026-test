@@ -155,4 +155,4 @@ CREATE TABLE arrivals_requests (
 );
 
 INSERT INTO employees (fullname, password_hash, email, phone, role) 
-VALUES ('Default Admin', '1111', 'admin@admin.com', '+0000000000', 'admin');
+VALUES ('Default Admin', '$2a$10$kItRUdzWLlfcVX2EeZf4ruPKoknMGx2s2k9lGdHrkcgb5F29jblc2', 'admin@admin.com', '+0000000000', 'admin');

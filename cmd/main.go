@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -69,13 +70,16 @@ func main() {
 	log.Println("✅ Connected to database")
 
 	// --- Start HTTP server ---
+	serverHost := envOrDefault("SERVER_HOST", "0.0.0.0")
+	serverPort := envAsIntOrDefault("SERVER_PORT", 8080)
+
 	serverConfig := server.Config{
-		Host:            "0.0.0.0",
-		Port:            8080,
-		ReadTimeout:     15 * time.Second,
-		WriteTimeout:    15 * time.Second,
-		IdleTimeout:     60 * time.Second,
-		ShutdownTimeout: 30 * time.Second,
+		Host:            serverHost,
+		Port:            serverPort,
+		ReadTimeout:     time.Duration(envAsIntOrDefault("SERVER_READ_TIMEOUT", 15)) * time.Second,
+		WriteTimeout:    time.Duration(envAsIntOrDefault("SERVER_WRITE_TIMEOUT", 15)) * time.Second,
+		IdleTimeout:     time.Duration(envAsIntOrDefault("SERVER_IDLE_TIMEOUT", 60)) * time.Second,
+		ShutdownTimeout: time.Duration(envAsIntOrDefault("SERVER_SHUTDOWN_TIMEOUT", 30)) * time.Second,
 	}
 
 	srv := server.New(serverConfig)
@@ -108,6 +112,15 @@ func main() {
 func envOrDefault(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return def
+}
+
+func envAsIntOrDefault(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			return parsed
+		}
 	}
 	return def
 }
