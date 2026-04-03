@@ -1,9 +1,9 @@
 include .env
 export
 
-export PROJECT_ROOT := $(shell pwd)
+export PROJECT_ROOT := $(CURDIR)
 
-up: postgres-up frontend-up backend-up
+up: postgres-up backend-up frontend-up
 down: postgres-down backend-down frontend-down
 
 postgres-up:
@@ -13,22 +13,16 @@ postgres-down:
 	@docker-compose down postgres
 
 postgres-cleanup:
-	@printf "Are you sure you want to delete the database? (y/n): "; \
-	read ans; \
-	if [ "$$ans" = "y" ]; then \
-		rm -rf $(PROJECT_ROOT)/out/pgdata; \
-	else \
-		echo "Database not deleted"; \
-	fi
+	@go run scripts/postgres_cleanup.go
 
 backend-up:
-	@docker-compose up --build backend
+	@docker-compose up -d --build backend
 
 backend-down:
 	@docker-compose down backend
 
 frontend-up:
-	@docker-compose up --build frontend
+	@docker-compose up -d --build frontend
 
 frontend-down:
 	@docker-compose down frontend

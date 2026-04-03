@@ -7,7 +7,7 @@ CREATE TABLE employees (
     email VARCHAR(100) NOT NULL UNIQUE CHECK (email LIKE '%@%.%'),
     phone VARCHAR(20) NOT NULL CHECK (phone ~ '^\+[0-9]+$'),
 
-    role VARCHAR(50) NOT NULL CHECK (role IN ('driver', 'logistician', 'warehouse_manager')),
+    role VARCHAR(50) NOT NULL CHECK (role IN ('driver', 'logistician', 'warehouse_manager', 'admin')),
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -153,3 +153,6 @@ CREATE TABLE arrivals_requests (
     FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE,
     FOREIGN KEY (sku_id) REFERENCES sku(id) ON DELETE CASCADE
 );
+
+INSERT INTO employees (fullname, password_hash, email, phone, role) 
+VALUES ('Default Admin', '1111', 'admin@admin.com', '+0000000000', 'admin');
