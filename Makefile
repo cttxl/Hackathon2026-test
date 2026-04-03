@@ -23,7 +23,7 @@ postgres-down:
 	@$(DOCKER_COMPOSE) down postgres
 
 postgres-cleanup:
-	@go run scripts/postgres_cleanup.go
+	@rm -rf ./out/pgdata
 
 backend-up:
 	@$(DOCKER_COMPOSE) up -d --build backend

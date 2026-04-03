@@ -198,16 +198,9 @@ Maps a specific product to a specific delivery point.
 ```
 *Query Filters (`GET`):* `transport_id`, `driver_id`, `status`
 
-### 3.8. Arrivals Schedule
 
-**`POST /arrivals-schedule`**
-```json
-{
-  "arrival_id": "123e4567-e89b-12d3-a456-426614174007"
-}
-```
 
-### 3.9. Arrival Requests (Mappings/Dispatch)
+### 3.8. Arrival Requests (Mappings/Dispatch)
 
 **`POST /arrivals-requests`**
 ```json
@@ -219,7 +212,7 @@ Maps a specific product to a specific delivery point.
 }
 ```
 
-### 3.10. Vehicles
+### 3.9. Vehicles
 *(Fuel types: `diesel`, `gasoline`, `electric`)*
 
 **`POST /vehicles`**

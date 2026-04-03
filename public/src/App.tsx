@@ -24,7 +24,7 @@ export default function App() {
 
   const tabs = [
     "employees", "clients", "delivery-points", "products", "sku", 
-    "requests", "arrivals", "arrivals-schedule", "arrivals-requests", "vehicles"
+    "requests", "arrivals", "arrivals-requests", "vehicles"
   ];
 
   /* ---------------------------------
