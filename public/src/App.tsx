@@ -78,8 +78,11 @@ export default function App() {
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const formattedData = { ...formData };
+      
+      const numberFields = ["weight", "height", "width", "length", "quantity", "fuel_consumption", "max_weight", "max_height", "max_width", "max_length", "priority"];
+      
       for (const k in formattedData) {
-        if (!isNaN(formattedData[k]) && formattedData[k] !== "") {
+        if (numberFields.includes(k) && formattedData[k] !== "") {
           formattedData[k] = Number(formattedData[k]);
         }
       }
