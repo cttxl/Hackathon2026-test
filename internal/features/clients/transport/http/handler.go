@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -38,8 +39,21 @@ func (h *ClientHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Name == "" || input.Email == "" || input.Phone == "" {
+		response.Error(w, http.StatusBadRequest, "Missing required fields")
+		return
+	}
+	if !strings.Contains(input.Email, "@") || !strings.Contains(input.Email, ".") {
+		response.Error(w, http.StatusBadRequest, "Invalid email format")
+		return
+	}
+
 	c, err := h.repo.Create(r.Context(), input)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			response.Error(w, http.StatusConflict, "Email already exists")
+			return
+		}
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}

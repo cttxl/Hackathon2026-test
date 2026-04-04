@@ -38,6 +38,18 @@ func (h *ArrivalRequestHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.ArrivalID == "" {
+		response.Error(w, http.StatusBadRequest, "Missing arrival_id")
+		return
+	}
+	if input.Priority <= 0 {
+		response.Error(w, http.StatusBadRequest, "Missing priority")
+		return
+	}
+	if len(input.SkuIDs) == 0 {
+		input.SkuIDs = []string{}
+	}
+
 	ar, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
@@ -75,6 +87,10 @@ func (h *ArrivalRequestHandler) GetRecommended(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	if ars == nil {
+		ars = []domain.ArrivalRequest{}
 	}
 
 	response.SuccessList(w, ars, 1, 10, len(ars))

@@ -37,6 +37,19 @@ func (h *ArrivalHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.TransportID == "" || input.DriverID == "" {
+		response.Error(w, http.StatusBadRequest, "Missing transport_id or driver_id")
+		return
+	}
+	if len(input.TransportID) != 36 {
+		response.Error(w, http.StatusBadRequest, "Invalid transport_id")
+		return
+	}
+	if input.TimeToArrival.IsZero() {
+		response.Error(w, http.StatusBadRequest, "Missing time_to_arrival")
+		return
+	}
+
 	arr, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
@@ -80,6 +93,11 @@ func (h *ArrivalHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var input domain.ArrivalUpdate
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		response.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if input.Status != nil && *input.Status != "pending" && *input.Status != "accepted" && *input.Status != "in_transit" && *input.Status != "delivered" && *input.Status != "cancelled" {
+		response.Error(w, http.StatusBadRequest, "Invalid status")
 		return
 	}
 

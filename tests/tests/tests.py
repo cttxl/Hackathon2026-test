@@ -660,7 +660,7 @@ def test_arrival_requests(h: dict, arrival_id: str, request_id: str, sku_id: str
     payload = {
         "arrival_id": arrival_id,
         "request_id": request_id,
-        "sku_id": sku_id,
+        "sku_ids": [sku_id],
         "priority": 1
     }
 
@@ -697,7 +697,7 @@ def test_arrival_requests(h: dict, arrival_id: str, request_id: str, sku_id: str
     # GET recommended
     resp = requests.get(f"{BASE_URL}/arrivals-requests/recomended", headers=h)
     check("GET /arrivals-requests/recomended → 200", resp.status_code == 200)
-    check("recomended returns list", isinstance(resp.json(), list))
+    check("recomended returns list", isinstance(resp.json().get("data", []), list))
 
     # DELETE
     resp = requests.delete(f"{BASE_URL}/arrivals-requests/{ar_id}", headers=h)

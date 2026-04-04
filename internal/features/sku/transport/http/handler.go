@@ -37,6 +37,15 @@ func (h *SKUHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.ProductID == "" || input.DeliveryPointID == "" {
+		response.Error(w, http.StatusBadRequest, "Missing required fields")
+		return
+	}
+	if len(input.ProductID) != 36 {
+		response.Error(w, http.StatusBadRequest, "Invalid product_id")
+		return
+	}
+
 	sku, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())

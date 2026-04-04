@@ -37,6 +37,11 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Weight <= 0 {
+		response.Error(w, http.StatusBadRequest, "Missing weight or invalid")
+		return
+	}
+
 	p, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())

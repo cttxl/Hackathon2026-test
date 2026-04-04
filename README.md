@@ -1,49 +1,67 @@
-# LOCAL HOSTING GUIDE
+# Logistics System Backend
 
-## Requirements
-- Docker
-- Docker Compose
-- Make
+An enterprise-ready logistics API built with Go, structured for high maintainability, powered by PostgreSQL, and completely containerized for rapid local testing and deployment.
 
-## Configuration
-Ensure your `.env` file is present in the project root with the necessary database configurations
+---
 
-## Running the Application
-To run the entire system (Database, Backend, and Frontend), simply run:
+## Deployment Guide
 
+### Prerequisites
+- Docker installed
+- Docker Compose configured
+- Local port 5432 must be free for PostgreSQL
+
+### 1. Configuration
+A `.env` file must exist in the root of the project with required configurations. Feel free to copy from the provided example:
 ```bash
-make up
-make migrate-up
+cp .env.example .env
 ```
 
-This will:
-- Start the PostgreSQL database on port `5432`
-- Build and start the Go Backend on port `8080` (API: `http://localhost:8080`)
-- Build and start the React Frontend on port `3000` (UI: `http://localhost:3000`)
+### 2. Spinning up the Project
+You can effortlessly spin up the database, frontend, and backend simultaneously using Make:
+```bash
+make up         # Boots all docker containers in detached mode
+make migrate-up # Applies DB schemas strictly inside the postgres container
+```
+That's it!
+- Backend API: `http://localhost:8080`
+- Frontend UI: `http://localhost:3000`
+- Database: `localhost:5432`
 
-## Useful Commands
+---
 
-- `make up`: Starts the application.
-- `make down`: Stops and removes all containers.
-- `make migrate-up`: Runs database migrations.
-- `make migrate-down`: Reverts database migrations.
-- `make backend-up`: Starts only the go backend (and postgres dependency).
-- `make frontend-up`: Starts only the react frontend (and backend dependency).
-- `make postgres-cleanup`: Prompts to safely delete the database data.
+## Makefile Reference
 
-# API Documentation for Logistics System
+We utilize `make` to abstract away raw Docker Compose commands efficiently.
 
-This is the comprehensive whole system API documentation. It details every parameter, default behavior, constraints, and standard structure for interacting with the backend.
+| Command | Action |
+|---------|--------|
+| `make up` | Starts the entire cluster (PostgreSQL, Back-End, Front-End). |
+| `make down` | Halts and safely removes all actively running application containers. |
+| `make postgres-up` / `down` | Boot or halt purely the PostgreSQL database securely. |
+| `make postgres-cleanup` | Dangerously clears volume data (WARNING: removes `./out/pgdata` completely). |
+| `make backend-up` / `down` | Manage solely the Go Backend container alongside DB dependencies. |
+| `make frontend-up` / `down` | Manage solely the React Frontend app. |
+| `make migrate-create name=...` | Generate a scaffold for a new SQL migration payload under `/migrations`. |
+| `make migrate-up` / `down` | Migrate the backend PostgreSQL schema forwards or roll revisions backwards. |
+| `make test` | Boots an ephemeral Python container running the end-to-end integration test suite. |
+| `make fakedata` | Boots a python script randomly populating the database with mock test properties. |
 
-## 1. System-Wide Behaviors
+---
 
-### 1.1 Standard Response Envelopes
-All successful queries returning *a single resource* return the JSON resource natively.
-All endpoints returning *a list of resources* (e.g., `GET /employees`) utilize the following envelope:
+## API Documentation
+
+The backend adheres strictly to modern RESTful principles, providing explicit envelopes for array lists and graceful JSON error feedback.
+
+### 1. Global Behaviors
+
+#### Standard Resource Envelope
+Endpoints returning standard solitary queries natively yield a direct JSON object. Endpoints dealing with *Lists* uniformly enforce the following structured envelope:
+
 ```json
 {
   "data": [
-    { "id": "uuid", "..." : "..." }
+    { "id": "123e4567-e89b-12d3...", "name": "..." }
   ],
   "meta": {
     "page": 1,
@@ -53,256 +71,132 @@ All endpoints returning *a list of resources* (e.g., `GET /employees`) utilize t
 }
 ```
 
-**Standard Error Response:**
-Failures return a standard `error` key with descriptive string, adhering to applicable HTTP status codes (`400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `500 Internal Server Error`).
+#### Error Handling and Status Codes
+Any structural or validation error returns a standardized schema. Constraint violations emit appropriate HTTP Codes:
+- `400 Bad Request`: Missing constraints or invalid ENUM values.
+- `401 Unauthorized` / `403 Forbidden`: Unauthenticated access.
+- `404 Not Found`: Unknown Resource UUID queries.
+- `409 Conflict`: PostgreSQL deduplication conflicts (e.g. duplicate distinct emails).
+- `500 Server Error`: Unhandled Database panic.
+
 ```json
 {
-  "error": "A clear, actionable error message"
+  "error": "Detailed reason why the request failed"
 }
 ```
 
-### 1.2 Pagination
-List endpoints accept standard pagination queries:
-- `page` (integer): Current page number (default: `1`).
-- `limit` (integer): Number of items per page (default: `10`).
-
-### 1.3 RESTful Consistency
-All standard CRUD resources adopt matching paths:
-- **`POST /{resource}`**: Creates a resource. Expects a JSON body matching `{Resource}Create` constraints. Returns `201 Created`.
-- **`GET /{resource}`**: Retrieves a paginated list of resources. Supports `page`, `limit`, and resource-specific query filters. Returns `200 OK`.
-- **`GET /{resource}/{id}`**: Retrieves a single resource by UUID. Returns `200 OK`.
-- **`PATCH /{resource}/{id}`**: Edits a resource by UUID. Fields are optional. Only passed fields will be modified. Returns `200 OK`.
-- **`DELETE /{resource}/{id}`**: Deletes a resource by UUID. Returns `204 No Content`.
+#### REST Constraints
+Lists queries intrinsically listen for `page` and `limit` arguments.
+Standard REST routes are uniformly followed for all core resources:
+- `POST /{resource}`: Create a new resource.
+- `GET /{resource}`: List resources with pagination/filtering schemas.
+- `GET /{resource}/{id}`: Read solitary resource attributes.
+- `PATCH /{resource}/{id}`: Partial update to attributes (fields omitted are ignored).
+- `DELETE /{resource}/{id}`: Delete the resource persistently.
 
 ---
 
-## 2. Resources
+### 2. Available Resources
 
-### 2.1 Employees (`/employees`)
-Employees represent staff utilizing the system.
+#### Employees (`/employees`)
+Administrators and staff utilizing the logistic dashboards.
 
-**Constraints:**
-- `fullname`: string (max 100), required.
-- `email`: string (max 100), required, unique, must match `%@%.%`.
-- `password`: string, required upon creation.
-- `phone`: string (max 20), required, must match regex `^\+[0-9]+$`.
-- `role`: string, required, Enum: `driver`, `logistician`, `warehouse_manager`, `admin`.
+**Resource Fields:**
+- `email` (string): Must uniquely identify the user (`*@*.*`). Conflicts throw 409 status.
+- `fullname` (string): Length max 100.
+- `role` (string): Enum restricted to `driver`, `logistician`, `warehouse_manager`, `admin`.
+- `password` (string): Required exclusively on POST.
+- `phone` (string): Standard dial string (e.g. `+123456789`).
 
-**Create Request (`POST`) Example:**
-*(Requires Admin Authentication Token)*
-```json
-{
-  "fullname": "John Doe",
-  "email": "john.doe@example.com",
-  "password": "secure_password",
-  "phone": "+1234567890",
-  "role": "driver"
-}
-```
+#### Clients (`/clients`)
+Companies placing outbound logistics requests tied to custom warehouse spaces.
 
----
+**Resource Fields:**
+- `email` (string): Must uniquely identify the client (`*@*.*`). Conflicts throw 409 status.
+- `name` (string): Internal corporate name.
+- `password` (string): Required exclusively on POST.
+- `phone` (string): Standard dial string.
 
-### 2.2 Clients (`/clients`)
-Clients who utilize the logistics systems to execute supply orders and host delivery points.
+#### Delivery Points (`/delivery-points`)
+Discrete physical origins tightly mapped to client boundaries.
 
-**Constraints:**
-- `name`: string (max 100), required.
-- `email`: string (max 100), required, unique, must match `%@%.%`.
-- `password`: string, required upon creation.
-- `phone`: string (max 20), required, must match regex `^\+[0-9]+$`.
+**Resource Fields:**
+- `name` (string): Location identifier.
+- `address` (string): Strict local address string.
+- `owner_id` (UUID): Reference to the assigned Client node `Client.id`.
+- `type` (string): Enum restricted to `warehouse`, `client_point`, `provider`.
+- `height`, `width`, `length` (integer): Dimensional bounds representing capacities (optional).
 
-**Create Request (`POST`) Example:**
-*(Requires Admin Authentication Token)*
-```json
-{
-  "name": "Acme Corp",
-  "password": "secure_password",
-  "email": "contact@acme.com",
-  "phone": "+1234567891"
-}
-```
-
----
-
-### 2.3 Delivery Points (`/delivery-points`)
-Physical locations mapped to Clients where pickups or deliveries occur.
-
-**Constraints:**
-- `name`: string (max 100), required.
-- `address`: string (max 255), required.
-- `owner_id`: UUID, required, foreign key referencing a `client.id`.
-- `type`: string, required, Enum: `warehouse`, `client_point`, `provider`.
-- `height`: integer, optional.
-- `width`: integer, optional.
-- `length`: integer, optional.
-
-**Query Filters (`GET`):**
+**Search Filters (GET):**
 - `?type={enum}`
 - `?owner_id={uuid}`
 
-**Create Request (`POST`) Example:**
-```json
-{
-  "name": "Central Warehouse A",
-  "address": "123 Industry Ave, Cityville",
-  "owner_id": "123e4567-e89b-12d3-a456-426614174002",
-  "type": "warehouse",
-  "height": 500,
-  "width": 1000,
-  "length": 2000
-}
-```
+#### Products (`/products`)
+Abstract material stock types universally tracked across dispatches.
 
----
+**Resource Fields:**
+- `name` (string): Identity identifier.
+- `weight`, `height`, `width`, `length` (int): Required bounds, strictly evaluated > 0.
 
-### 2.4 Products (`/products`)
-Abstract stock types tracked within the logistics system globally.
+#### SKU (`/sku`)
+Real-time bindings linking a discrete Product explicitly to a specific Delivery Point warehouse node.
 
-**Constraints:**
-- `name`: string (max 100), required.
-- `weight`: integer, required.
-- `height`: integer, required.
-- `width`: integer, required.
-- `length`: integer, required.
+**Resource Fields:**
+- `product_id` (UUID): Associates sequentially to `Product.id`.
+- `delivery_point_id` (UUID): Associates sequentially to `DeliveryPoint.id`.
 
-**Create Request (`POST`) Example:**
-```json
-{
-  "name": "Steel Pipes 5m",
-  "weight": 200,
-  "height": 50,
-  "width": 50,
-  "length": 500
-}
-```
-
----
-
-### 2.5 SKU (Stock Keeping Units) (`/sku`)
-The linkage binding an abstract Product to a specific Delivery Point entity location.
-
-**Constraints:**
-- `product_id`: UUID, required, foreign key referencing `product.id`.
-- `delivery_point_id`: UUID, required, foreign key referencing `delivery_point.id`.
-
-**Query Filters (`GET`):**
+**Search Filters (GET):**
 - `?product_id={uuid}`
 - `?delivery_point_id={uuid}`
 
-**Create Request (`POST`) Example:**
-```json
-{
-  "product_id": "123e4567-e89b-12d3-a456-426614174004",
-  "delivery_point_id": "123e4567-e89b-12d3-a456-426614174003"
-}
-```
+#### Requests (`/requests`)
+Granular actionable demand order parameters tracked locally to a single client footprint. Note: Clients explicitly are forbidden from partial update (PATCH) actions.
 
----
+**Resource Fields:**
+- `product_id` (UUID): Explicit link to request material stock.
+- `delivery_point_id` (UUID): Node destined to act as the receiving unit.
+- `quantity` (int): Capacity required strictly evaluated > 0.
+- `emergency` (string): Enum accepting `default`, `high`, `critical`. Defaults to `default`.
+- `status` (string): Tracked globally. Expected constraints: `pending`, `accepted`, `in_transit`, `delivered`, `cancelled`. Defaults to `pending` upon POST invocation.
 
-### 2.6 Requests (Orders) (`/requests`)
-The actionable demand requests representing units needed at a Delivery Point location.
-
-**Constraints:**
-- `product_id`: UUID, required, foreign key referencing `product.id`.
-- `quantity`: integer, required.
-- `delivery_point_id`: UUID, required, foreign key referencing `delivery_point.id`.
-- `emergency`: string. Optional (defaults to `default`). Enum: `default`, `high`, `critical`.
-- `status`: string. Read-only on creation (defaults to `pending`). Enum: `pending`, `accepted`, `in_transit`, `delivered`, `cancelled`. Can be modified via `PATCH`.
-
-**Query Filters (`GET`):**
+**Search Filters (GET):**
 - `?product_id={uuid}`
 - `?delivery_point_id={uuid}`
 - `?status={enum}`
-- `?sku_id={uuid}` (Filters for Requests tied to an Arrival Request connected specifically to a SKU).
+- `?sku_id={uuid}` (Array inspection bindings via the association table constraints)
 
-**Create Request (`POST`) Example:**
-```json
-{
-  "product_id": "123e4567-e89b-12d3-a456-426614174004",
-  "quantity": 50,
-  "delivery_point_id": "123e4567-e89b-12d3-a456-426614174003",
-  "emergency": "default"
-}
-```
-*(Note: System determines ownership implicitly if user role is Client. Clients cannot update requests directly via `PATCH`.)*
+#### Arrivals (`/arrivals`)
+Logistics dispatches associating specific drivers with hardware transport currently spanning transit gaps.
 
----
+**Resource Fields:**
+- `transport_id` (UUID): Identifier for hardware Fleet unit `Vehicle.id`.
+- `driver_id` (UUID): Employee designated actively executing task `Employee.id`.
+- `time_to_arrival` (DATE): Timestamp utilizing strictly ISO 8601 formatting required globally.
+- `status` (string): Matches equivalent Request constraints (`pending`...`cancelled`).
 
-### 2.7 Arrivals (`/arrivals`)
-Logistics dispatches associating drivers with specific transport vehicles on a journey.
-
-**Constraints:**
-- `transport_id`: UUID, required, foreign key referencing `vehicle.id`.
-- `driver_id`: UUID, required, foreign key referencing `employee.id` (Driver).
-- `time_to_arrival`: TIMESTAMPTZ, required, standard ISO date string format.
-- `status`: string. Read-only on creation (defaults to `pending`). Enum: `pending`, `accepted`, `in_transit`, `delivered`, `cancelled`. Can be modified via `PATCH`.
-
-**Query Filters (`GET`):**
+**Search Filters (GET):**
 - `?transport_id={uuid}`
 - `?driver_id={uuid}`
 - `?status={enum}`
 
-**Create Request (`POST`) Example:**
-```json
-{
-  "transport_id": "123e4567-e89b-12d3-a456-426614174100", 
-  "driver_id": "123e4567-e89b-12d3-a456-426614174001",
-  "time_to_arrival": "2026-04-05T10:00:00Z"
-}
-```
+#### Arrival Requests (`/arrivals-requests`)
+Bridge tables indexing active parent transit Trips simultaneously across granular multi-Sku demand Requests.
 
----
+**Resource Fields:**
+- `arrival_id` (UUID): Dispath reference.
+- `request_id` (UUID): Core material Demand reference.
+- `sku_ids` (array of UUID strings): Indexed target UUID pointers loaded into dispatches.
+- `priority` (int): Integer index representation determining hierarchy execution priority strictly > 0.
 
-### 2.8 Arrival Requests (`/arrivals-requests`)
-Maps specific Arrivals (deliveries/trips) to granular demand Requests, acting as the manifest line items identifying priority of transport for specific stocks.
+**Active Algorithms (GET):**
+- `GET /arrivals-requests/recomended` — Evaluates existing metrics invoking deterministic sorting logic rendering standard array envelopes containing the idealized bounds natively over JSON representation.
 
-**Constraints:**
-- `arrival_id`: UUID, required, foreign key referencing `arrival.id`.
-- `request_id`: UUID, required, foreign key referencing `request.id`.
-- `sku_ids`: Array of UUIDs, required, matching multiple SKUs inside a specific dispatch.
-- `priority`: integer, required.
+#### Vehicles (`/vehicles`)
+Fleet capabilities available throughout logistics network topologies.
 
-*(Note: Standard `/arrivals-requests` GET queries do not possess pre-packaged filter columns).*
-
-**`GET /arrivals-requests/recomended`**
-Executes recommendation algorithm to return an optimal list of arrival-requests.
-(Currently returns an empty list while the algorithm is pending implementation).
-
-**Create Request (`POST`) Example:**
-```json
-{
-  "arrival_id": "123e4567-e89b-12d3-a456-426614174007",
-  "request_id": "123e4567-e89b-12d3-a456-426614174006",
-  "sku_ids": ["123e4567-e89b-12d3-a456-426614174005"],
-  "priority": 1
-}
-```
-
----
-
-### 2.9 Vehicles (`/vehicles`)
-Available transportation capabilities within the logistics network fleet.
-
-**Constraints:**
-- `name`: string (max 100), required.
-- `fuel_type`: string, required. Enum: `diesel`, `gasoline`, `electric`.
-- `fuel_consumption`: integer, required.
-- `max_weight`: integer, required.
-- `max_height`: integer, required.
-- `max_width`: integer, required.
-- `max_length`: integer, required.
-- `address`: string, required.
-
-**Create Request (`POST`) Example:**
-```json
-{
-  "name": "Volvo Truck XL",
-  "fuel_type": "diesel",
-  "fuel_consumption": 25,
-  "max_weight": 20000,
-  "max_height": 400,
-  "max_width": 250,
-  "max_length": 1200,
-  "address": "Depot 1, Route 66"
-}
-```
+**Resource Fields:**
+- `name` (string): Name identifiers.
+- `address` (string): Rest location.
+- `fuel_type` (string): Enum constraints limited strictly to `diesel`, `gasoline`, `electric`.
+- `fuel_consumption` (int): General boundary efficiency constraint mappings > 0.
+- `max_weight`, `max_height`, `max_width`, `max_length` (int): Limit properties matching exact item storage rules > 0.

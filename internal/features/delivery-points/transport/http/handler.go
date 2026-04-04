@@ -37,6 +37,15 @@ func (h *DeliveryPointHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Type != "warehouse" && input.Type != "client_point" && input.Type != "provider" {
+		response.Error(w, http.StatusBadRequest, "Invalid type")
+		return
+	}
+	if input.OwnerID == "" {
+		response.Error(w, http.StatusBadRequest, "Missing owner_id")
+		return
+	}
+
 	dp, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())

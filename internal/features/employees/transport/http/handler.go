@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -38,8 +39,29 @@ func (h *EmployeeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Fullname == "" || input.Email == "" || input.Role == "" || input.Phone == "" {
+		response.Error(w, http.StatusBadRequest, "Missing required fields")
+		return
+	}
+	if !strings.Contains(input.Email, "@") || !strings.Contains(input.Email, ".") {
+		response.Error(w, http.StatusBadRequest, "Invalid email format")
+		return
+	}
+	if input.Role != "driver" && input.Role != "logistician" && input.Role != "warehouse_manager" && input.Role != "admin" {
+		response.Error(w, http.StatusBadRequest, "Invalid role")
+		return
+	}
+	if !strings.HasPrefix(input.Phone, "+") {
+		response.Error(w, http.StatusBadRequest, "Invalid phone format")
+		return
+	}
+
 	e, err := h.repo.Create(r.Context(), input)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			response.Error(w, http.StatusConflict, "Email already exists")
+			return
+		}
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}

@@ -37,6 +37,15 @@ func (h *VehicleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.FuelType != "diesel" && input.FuelType != "gasoline" && input.FuelType != "electric" {
+		response.Error(w, http.StatusBadRequest, "Invalid fuel_type")
+		return
+	}
+	if input.Address == "" {
+		response.Error(w, http.StatusBadRequest, "Missing address")
+		return
+	}
+
 	v, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())

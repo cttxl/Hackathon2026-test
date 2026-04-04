@@ -39,6 +39,15 @@ func (h *RequestHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Quantity <= 0 {
+		response.Error(w, http.StatusBadRequest, "Missing or invalid quantity")
+		return
+	}
+	if input.Emergency != "" && input.Emergency != "default" && input.Emergency != "high" && input.Emergency != "critical" {
+		response.Error(w, http.StatusBadRequest, "Invalid emergency")
+		return
+	}
+
 	if claims != nil && claims.Type == "client" {
 		isOwner, err := h.repo.IsClientOwnerOfDeliveryPoint(r.Context(), input.DeliveryPointID, claims.ID)
 		if err != nil || !isOwner {
@@ -112,6 +121,11 @@ func (h *RequestHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var input domain.RequestUpdate
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		response.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if input.Status != nil && *input.Status != "pending" && *input.Status != "accepted" && *input.Status != "in_transit" && *input.Status != "delivered" && *input.Status != "cancelled" {
+		response.Error(w, http.StatusBadRequest, "Invalid status")
 		return
 	}
 
