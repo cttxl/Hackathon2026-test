@@ -702,9 +702,9 @@ def test_arrival_requests(h: dict, arrival_id: str, request_id: str, sku_id: str
     check("GET /arrivals-requests/unknown → 404", resp.status_code == 404)
 
     # GET recommended
-    resp = requests.get(f"{BASE_URL}/arrivals-requests/recomended", headers=h)
-    check("GET /arrivals-requests/recomended → 200", resp.status_code == 200)
-    check("recomended returns list", isinstance(resp.json().get("data", []), list))
+    resp = requests.get(f"{BASE_URL}/arrivals-requests/recommended", headers=h)
+    check("GET /arrivals-requests/recommended → 200", resp.status_code == 200)
+    check("recommended returns list", isinstance(resp.json().get("data", []), list))
 
     # DELETE
     resp = requests.delete(f"{BASE_URL}/arrivals-requests/{ar_id}", headers=h)

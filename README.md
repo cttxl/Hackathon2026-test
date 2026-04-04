@@ -255,7 +255,7 @@ Bridge tables indexing active parent transit Trips simultaneously across granula
 - `priority` (int): Integer index representation determining hierarchy execution priority strictly > 0.
 
 **Active Algorithms (GET):**
-- `GET /arrivals-requests/recomended` — Evaluates existing metrics invoking deterministic sorting logic rendering standard array envelopes containing the idealized bounds natively over JSON representation.
+- `GET /arrivals-requests/recommended` — Evaluates existing metrics invoking deterministic sorting logic rendering standard array envelopes containing the idealized bounds natively over JSON representation.
 
 #### Vehicles (`/vehicles`)
 Fleet capabilities available throughout logistics network topologies.

@@ -25,7 +25,7 @@ export function TestApiPage() {
 
   const tabs = [
     "employees", "clients", "delivery-points", "products", "sku", 
-    "requests", "arrivals", "arrivals-requests", "arrivals-requests/recomended", "vehicles"
+    "requests", "arrivals", "arrivals-requests", "arrivals-requests/recommended", "vehicles"
   ];
 
   /* ---------------------------------

@@ -24,7 +24,7 @@ func (h *ArrivalRequestHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/arrivals-requests", func(r chi.Router) {
 		r.Post("/", h.Create)
 		r.Get("/", h.List)
-		r.Get("/recomended", h.GetRecommended)
+		r.Get("/recommended", h.GetRecommended)
 		r.Get("/{id}", h.GetByID)
 		r.Patch("/{id}", h.Update)
 		r.Delete("/{id}", h.Delete)
