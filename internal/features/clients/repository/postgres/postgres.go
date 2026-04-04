@@ -7,6 +7,7 @@ import (
 
 	"github.com/cttxl/Hackathon2026-test/internal/core/domain"
 	"github.com/cttxl/Hackathon2026-test/internal/core/repository/postgres"
+	"github.com/cttxl/Hackathon2026-test/internal/core/auth"
 )
 
 type ClientRepository struct {
@@ -19,11 +20,17 @@ func NewClientRepository(db *sql.DB) *ClientRepository {
 
 func (r *ClientRepository) Create(ctx context.Context, input domain.ClientCreate) (domain.Client, error) {
 	var c domain.Client
-	err := r.DB().QueryRowContext(ctx,
+
+	hashedPassword, err := auth.HashPassword(input.Password)
+	if err != nil {
+		return c, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	err = r.DB().QueryRowContext(ctx,
 		`INSERT INTO clients (name, password_hash, email, phone)
 		 VALUES ($1, $2, $3, $4)
 		 RETURNING id, name, email, phone, created_at, updated_at`,
-		input.Name, input.Password, input.Email, input.Phone,
+		input.Name, hashedPassword, input.Email, input.Phone,
 	).Scan(&c.ID, &c.Name, &c.Email, &c.Phone, &c.CreatedAt, &c.UpdatedAt)
 	return c, err
 }
@@ -79,8 +86,12 @@ func (r *ClientRepository) Update(ctx context.Context, id string, input domain.C
 		argIdx++
 	}
 	if input.Password != nil {
+		hashed, err := auth.HashPassword(*input.Password)
+		if err != nil {
+			return domain.Client{}, fmt.Errorf("failed to hash password: %w", err)
+		}
 		setClauses = append(setClauses, fmt.Sprintf("password_hash = $%d", argIdx))
-		args = append(args, *input.Password)
+		args = append(args, hashed)
 		argIdx++
 	}
 	if input.Phone != nil {
