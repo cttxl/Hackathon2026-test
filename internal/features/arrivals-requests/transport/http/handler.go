@@ -24,6 +24,7 @@ func (h *ArrivalRequestHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/arrivals-requests", func(r chi.Router) {
 		r.Post("/", h.Create)
 		r.Get("/", h.List)
+		r.Get("/recomended", h.GetRecommended)
 		r.Get("/{id}", h.GetByID)
 		r.Patch("/{id}", h.Update)
 		r.Delete("/{id}", h.Delete)
@@ -67,6 +68,16 @@ func (h *ArrivalRequestHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.SuccessList(w, ars, page, limit, total)
+}
+
+func (h *ArrivalRequestHandler) GetRecommended(w http.ResponseWriter, r *http.Request) {
+	ars, err := h.repo.GetRecommended(r.Context())
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SuccessList(w, ars, 1, 10, len(ars))
 }
 
 func (h *ArrivalRequestHandler) Update(w http.ResponseWriter, r *http.Request) {

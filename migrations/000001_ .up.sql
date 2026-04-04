@@ -97,9 +97,9 @@ CREATE TABLE requests (
     quantity INT NOT NULL,
 
     delivery_point_id UUID NOT NULL,
-    emergency BOOLEAN NOT NULL,
+    emergency VARCHAR(50) NOT NULL DEFAULT 'default' CHECK (emergency IN ('default', 'high', 'critical')),
 
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'shipped', 'delivered', 'cancelled')),
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'in_transit', 'delivered', 'cancelled')),
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -116,7 +116,7 @@ CREATE TABLE arrivals (
     driver_id UUID NOT NULL,
 
     time_to_arrival TIMESTAMPTZ NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'shipped', 'delivered', 'cancelled')), --TODO: CHANGE
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'in_transit', 'delivered', 'cancelled')), --TODO: CHANGE
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

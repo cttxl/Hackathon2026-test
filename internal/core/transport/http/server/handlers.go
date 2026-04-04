@@ -103,7 +103,7 @@ func RegisterHardcodedHandlers(r chi.Router) {
 		"product_id":        "123e4567-e89b-12d3-a456-426614174005",
 		"quantity":          50,
 		"delivery_point_id": "123e4567-e89b-12d3-a456-426614174004",
-		"emergency":         false,
+		"emergency":         "default",
 		"status":            "pending",
 	})
 
