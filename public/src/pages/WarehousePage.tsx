@@ -47,6 +47,10 @@ export function WarehousePage() {
   const [skus, setSkus] = useState<ApiSku[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [totalInventoryItems, setTotalInventoryItems] = useState(0);
+  const [refreshRequestsKey, setRefreshRequestsKey] = useState(0);
+  const pageSize = 10;
 
   // ── Load All Warehouses ──────────────────────────────────────────────────
   useEffect(() => {
@@ -74,22 +78,27 @@ export function WarehousePage() {
     if (!selectedWarehouseId) return;
     const fetchSkus = async () => {
       try {
-        const res = await getSkus(selectedWarehouseId);
+        const res = await getSkus(selectedWarehouseId, inventoryPage, pageSize);
         setSkus(res?.data || []);
+        setTotalInventoryItems(res?.meta?.total || 0);
       } catch (err) {
         console.error('SKU fetch error:', err);
         setSkus([]);
+        setTotalInventoryItems(0);
       }
     };
     fetchSkus();
+  }, [selectedWarehouseId, inventoryPage]);
+
+  useEffect(() => {
+    setInventoryPage(1);
   }, [selectedWarehouseId]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleShipRequest = async (id: string) => {
     try {
-      await patchRequest(id, { status: 'shipped' });
-      // RequestsQueue re-fetches on its own when selectedWarehouseId changes;
-      // trigger a lightweight re-mount by toggling a key if needed.
+      await patchRequest(id, { status: 'delivered' });
+      setRefreshRequestsKey(prev => prev + 1);
     } catch (err) {
       alert('Failed to update request status.');
     }
@@ -138,11 +147,16 @@ export function WarehousePage() {
               <InventoryList
                 skus={skus || []}
                 loading={loading}
+                currentPage={inventoryPage}
+                pageSize={pageSize}
+                totalItems={totalInventoryItems}
+                onPageChange={setInventoryPage}
               />
 
               <RequestsQueue
                 selectedWarehouseId={selectedWarehouseId}
                 onShipRequest={handleShipRequest}
+                refreshKey={refreshRequestsKey}
               />
             </>
           )}
