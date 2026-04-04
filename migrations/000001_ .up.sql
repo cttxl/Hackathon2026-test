@@ -97,7 +97,7 @@ CREATE TABLE requests (
     quantity INT NOT NULL,
 
     delivery_point_id UUID NOT NULL,
-    emergency BOOLEAN NOT NULL,
+    emergency VARCHAR(50) NOT NULL DEFAULT 'default' CHECK (emergency IN ('default', 'hight', 'critical')),
 
     status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'in_transit', 'delivered', 'cancelled')),
 

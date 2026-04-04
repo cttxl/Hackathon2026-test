@@ -206,7 +206,7 @@ The actionable demand requests representing units needed at a Delivery Point loc
 - `product_id`: UUID, required, foreign key referencing `product.id`.
 - `quantity`: integer, required.
 - `delivery_point_id`: UUID, required, foreign key referencing `delivery_point.id`.
-- `emergency`: boolean, required.
+- `emergency`: string. Optional (defaults to `default`). Enum: `default`, `hight`, `critical`.
 - `status`: string. Read-only on creation (defaults to `pending`). Enum: `pending`, `accepted`, `in_transit`, `delivered`, `cancelled`. Can be modified via `PATCH`.
 
 **Query Filters (`GET`):**
@@ -221,7 +221,7 @@ The actionable demand requests representing units needed at a Delivery Point loc
   "product_id": "123e4567-e89b-12d3-a456-426614174004",
   "quantity": 50,
   "delivery_point_id": "123e4567-e89b-12d3-a456-426614174003",
-  "emergency": false
+  "emergency": "default"
 }
 ```
 *(Note: System determines ownership implicitly if user role is Client. Clients cannot update requests directly via `PATCH`.)*

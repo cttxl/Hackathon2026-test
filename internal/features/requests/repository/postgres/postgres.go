@@ -20,11 +20,16 @@ func NewRequestRepository(db *sql.DB) *RequestRepository {
 
 func (r *RequestRepository) Create(ctx context.Context, input domain.RequestCreate) (domain.Request, error) {
 	var req domain.Request
+	emergency := input.Emergency
+	if emergency == "" {
+		emergency = "default"
+	}
+
 	err := r.DB().QueryRowContext(ctx,
 		`INSERT INTO requests (product_id, quantity, delivery_point_id, emergency)
 		 VALUES ($1, $2, $3, $4)
 		 RETURNING id, product_id, quantity, delivery_point_id, emergency, status, created_at, updated_at`,
-		input.ProductID, input.Quantity, input.DeliveryPointID, input.Emergency,
+		input.ProductID, input.Quantity, input.DeliveryPointID, emergency,
 	).Scan(&req.ID, &req.ProductID, &req.Quantity, &req.DeliveryPointID, &req.Emergency, &req.Status, &req.CreatedAt, &req.UpdatedAt)
 	return req, err
 }

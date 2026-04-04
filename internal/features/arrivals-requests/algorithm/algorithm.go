@@ -7,5 +7,5 @@ import (
 )
 
 func GetRecommended(ctx context.Context) ([]domain.ArrivalRequest, error) {
-	return []domain.ArrivalRequest{}, nil
+
 }
