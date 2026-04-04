@@ -124,7 +124,7 @@ func RegisterHardcodedHandlers(r chi.Router) {
 		"id":         "123e4567-e89b-12d3-a456-426614174010",
 		"arrival_id": "123e4567-e89b-12d3-a456-426614174008",
 		"request_id": "123e4567-e89b-12d3-a456-426614174007",
-		"sku_id":     "123e4567-e89b-12d3-a456-426614174006",
+		"sku_ids":    []string{"123e4567-e89b-12d3-a456-426614174006"},
 		"priority":   1,
 	})
 

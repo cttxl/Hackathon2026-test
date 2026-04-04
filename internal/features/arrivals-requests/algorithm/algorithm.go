@@ -172,7 +172,7 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 			ar: domain.ArrivalRequest{
 				ArrivalID: arrivalID,
 				RequestID: requestID,
-				SkuID:     skuID,
+				SkuIDs:    []string{skuID},
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},

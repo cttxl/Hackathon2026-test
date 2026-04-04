@@ -72,7 +72,7 @@ func (r *RequestRepository) List(ctx context.Context, page, limit int, filters R
 		argIdx++
 	}
 	if filters.SkuID != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("id IN (SELECT request_id FROM arrivals_requests WHERE sku_id = $%d)", argIdx))
+		whereClauses = append(whereClauses, fmt.Sprintf("id IN (SELECT request_id FROM arrivals_requests WHERE $%d = ANY(sku_ids))", argIdx))
 		args = append(args, filters.SkuID)
 		argIdx++
 	}

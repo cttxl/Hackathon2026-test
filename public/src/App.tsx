@@ -85,6 +85,9 @@ export default function App() {
         if (numberFields.includes(k) && formattedData[k] !== "") {
           formattedData[k] = Number(formattedData[k]);
         }
+        if (k === "sku_ids" && typeof formattedData[k] === "string") {
+          formattedData[k] = formattedData[k].split(",").map((s: string) => s.trim()).filter(Boolean);
+        }
       }
 
       const res = await fetch(`${API_URL}/${activeTab}`, {
@@ -121,6 +124,7 @@ export default function App() {
       case "delivery-points": return ["name", "address", "owner_id", "type", "height", "width", "length"];
       case "sku": return ["product_id", "delivery_point_id"];
       case "requests": return ["product_id", "quantity", "delivery_point_id", "emergency"];
+      case "arrivals-requests": return ["arrival_id", "request_id", "priority", "sku_ids"];
       case "vehicles": return ["name", "fuel_type", "fuel_consumption", "max_weight", "max_height", "max_width", "max_length", "address"];
       default: return [];
     }

@@ -259,7 +259,7 @@ Maps specific Arrivals (deliveries/trips) to granular demand Requests, acting as
 **Constraints:**
 - `arrival_id`: UUID, required, foreign key referencing `arrival.id`.
 - `request_id`: UUID, required, foreign key referencing `request.id`.
-- `sku_id`: UUID, required, foreign key referencing `sku.id`.
+- `sku_ids`: Array of UUIDs, required, matching multiple SKUs inside a specific dispatch.
 - `priority`: integer, required.
 
 *(Note: Standard `/arrivals-requests` GET queries do not possess pre-packaged filter columns).*
@@ -273,7 +273,7 @@ Executes recommendation algorithm to return an optimal list of arrival-requests.
 {
   "arrival_id": "123e4567-e89b-12d3-a456-426614174007",
   "request_id": "123e4567-e89b-12d3-a456-426614174006",
-  "sku_id": "123e4567-e89b-12d3-a456-426614174005",
+  "sku_ids": ["123e4567-e89b-12d3-a456-426614174005"],
   "priority": 1
 }
 ```
