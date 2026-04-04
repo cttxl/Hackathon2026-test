@@ -5,9 +5,20 @@ import { getProductById } from '../../services/api';
 interface InventoryListProps {
   skus: ApiSku[];
   loading: boolean;
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
 }
 
-export const InventoryList: React.FC<InventoryListProps> = ({ skus, loading }) => {
+export const InventoryList: React.FC<InventoryListProps> = ({
+  skus,
+  loading,
+  currentPage,
+  pageSize,
+  totalItems,
+  onPageChange
+}) => {
   const [products, setProducts] = useState<Record<string, ApiProduct>>({});
 
   useEffect(() => {
@@ -34,12 +45,16 @@ export const InventoryList: React.FC<InventoryListProps> = ({ skus, loading }) =
     fetchNewProducts();
   }, [skus, products]);
 
+  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+  const totalPages = Math.ceil(totalItems / pageSize);
+
   return (
     <div className="inventory-panel">
       <div className="panel-header">
         <h3 className="panel-title">Warehouse Inventory</h3>
         <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>
-          {(skus?.length || 0)} Items Total
+          {totalItems > 0 ? `Showing ${startItem}-${endItem} of ${totalItems}` : '0 Items Total'}
         </span>
       </div>
 
@@ -63,10 +78,10 @@ export const InventoryList: React.FC<InventoryListProps> = ({ skus, loading }) =
                 return (
                   <tr key={sku.id}>
                     <td>{product ? product.name : 'Loading...'}</td>
-                    <td>{product ? `${product.weight} kg` : '...'}</td>
+                    <td>{product ? `${(product.weight / 1000).toFixed(1)} kg` : '...'}</td>
                     <td>
-                      {product 
-                        ? `${product.height}×${product.width}×${product.length} cm` 
+                      {product
+                        ? `${product.height}×${product.width}×${product.length} cm`
                         : '...'}
                     </td>
                   </tr>
@@ -76,6 +91,37 @@ export const InventoryList: React.FC<InventoryListProps> = ({ skus, loading }) =
           </table>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalItems > pageSize && (
+        <div className="pagination-controls">
+          <button
+            className="pagination-btn"
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            Previous
+          </button>
+
+          <span className="page-indicator">
+            Page <strong>{currentPage}</strong> of {totalPages}
+          </span>
+
+          <button
+            className="pagination-btn"
+            disabled={currentPage >= totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+          >
+            Next
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
