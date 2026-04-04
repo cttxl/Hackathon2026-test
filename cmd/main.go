@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/lib/pq"
 
+	"github.com/cttxl/Hackathon2026-test/internal/core/auth"
 	"github.com/cttxl/Hackathon2026-test/internal/core/config"
 	"github.com/cttxl/Hackathon2026-test/internal/core/repository/postgres"
 	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/server"
@@ -47,6 +48,8 @@ import (
 
 func main() {
 	cfg := config.NewConfig()
+	auth.Init(cfg.JWT_SECRET, cfg.JWT_EXPIRATION_HOURS)
+
 	dsn := postgres.GetDSN(cfg)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

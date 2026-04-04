@@ -8,6 +8,12 @@ import (
 )
 
 var JWTSecret = []byte("my_super_secret_hackathon_key")
+var JWTExpirationHours = 24
+
+func Init(secret string, expHours int) {
+	JWTSecret = []byte(secret)
+	JWTExpirationHours = expHours
+}
 
 type Claims struct {
 	ID   string `json:"id"`
@@ -17,7 +23,7 @@ type Claims struct {
 }
 
 func GenerateToken(userID, userType, userRole string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(JWTExpirationHours) * time.Hour)
 	claims := &Claims{
 		ID:   userID,
 		Type: userType,
