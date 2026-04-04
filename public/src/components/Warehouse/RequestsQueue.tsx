@@ -5,6 +5,7 @@ import { getRequests, getProductById } from '../../services/api';
 interface RequestsQueueProps {
   selectedWarehouseId: string;
   onShipRequest: (id: string) => void;
+  refreshKey?: number;
 }
 
 type FilterStatus = 'all' | RequestStatus;
@@ -28,6 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
 export const RequestsQueue: React.FC<RequestsQueueProps> = ({
   selectedWarehouseId,
   onShipRequest,
+  refreshKey,
 }) => {
   const [requests, setRequests] = useState<ApiRequest[]>([]);
   const [products, setProducts] = useState<Record<string, ApiProduct>>({});
@@ -64,11 +66,17 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [selectedWarehouseId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedWarehouseId, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
+
+  const handleAction = (id: string) => {
+    // Optimistic UI update: hide the request immediately
+    setRequests(prev => prev.filter(req => req.id !== id));
+    onShipRequest(id);
+  };
 
   // ── Filtered list ──────────────────────────────────────────────────────────
   const filtered = filterStatus === 'all'
@@ -230,7 +238,7 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
                 {canShip && (
                   <button
                     className="btn-action-teal"
-                    onClick={() => onShipRequest(req.id)}
+                    onClick={() => handleAction(req.id)}
                     style={{ marginLeft: '16px' }}
                   >
                     Ship Now
