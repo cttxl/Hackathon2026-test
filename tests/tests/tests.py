@@ -8,7 +8,10 @@ import requests
 import sys
 from datetime import datetime, timedelta, timezone
 
-BASE_URL = "http://backend:8080"
+import os
+BASE_URL = os.getenv("API_URL", "http://backend:8080")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@admin.com")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1111")
 
 # ──────────────────────────────────────────────
 # Helpers
@@ -37,7 +40,7 @@ def section(title: str):
 
 def admin_login() -> dict:
     """Return Authorization header for the admin user."""
-    resp = requests.post(f"{BASE_URL}/login", json={"email": "admin@admin.com", "password": "1111"})
+    resp = requests.post(f"{BASE_URL}/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
     assert resp.status_code == 200, f"Admin login failed: {resp.status_code} {resp.text}"
     token = resp.json().get("token")
     assert token, "No token in login response"
@@ -71,16 +74,16 @@ def test_auth():
     section("0 · Authentication")
 
     # valid login
-    resp = requests.post(f"{BASE_URL}/login", json={"email": "admin@admin.com", "password": "1111"})
+    resp = requests.post(f"{BASE_URL}/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
     check("POST /login valid credentials → 200", resp.status_code == 200)
     check("response contains token", "token" in resp.json())
 
     # wrong password
-    resp = requests.post(f"{BASE_URL}/login", json={"email": "admin@admin.com", "password": "wrong"})
+    resp = requests.post(f"{BASE_URL}/login", json={"email": ADMIN_EMAIL, "password": "wrong"})
     check("POST /login wrong password → 4xx", resp.status_code in (400, 401, 403))
 
     # missing fields
-    resp = requests.post(f"{BASE_URL}/login", json={"email": "admin@admin.com"})
+    resp = requests.post(f"{BASE_URL}/login", json={"email": ADMIN_EMAIL})
     check("POST /login missing password → 4xx", resp.status_code in (400, 401, 422))
 
 

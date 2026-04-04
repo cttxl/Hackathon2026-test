@@ -9,7 +9,17 @@ Faker.seed(42)
 fake_uk = Faker('uk_UA')
 fake_en = Faker('en_US')
 
-BASE_URL = "http://backend:8080"
+import os
+BASE_URL = os.getenv("API_URL", "http://backend:8080")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@admin.com")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1111")
+FAKEDATA_REQUESTS_COUNT = int(os.getenv("FAKEDATA_REQUESTS_COUNT", "100"))
+FAKEDATA_ARRIVALS_COUNT = int(os.getenv("FAKEDATA_ARRIVALS_COUNT", "10"))
+FAKEDATA_LOGISTICIAN_COUNT = int(os.getenv("FAKEDATA_LOGISTICIAN_COUNT", "5"))
+FAKEDATA_DRIVER_COUNT = int(os.getenv("FAKEDATA_DRIVER_COUNT", "20"))
+FAKEDATA_MANAGER_COUNT = int(os.getenv("FAKEDATA_MANAGER_COUNT", "20"))
+FAKEDATA_SKU_MIN = int(os.getenv("FAKEDATA_SKU_MIN", "1"))
+FAKEDATA_SKU_MAX = int(os.getenv("FAKEDATA_SKU_MAX", "3"))
 
 
 lviv_companies = {
@@ -156,7 +166,7 @@ def clear_before_seed(headers):
 def seed_requests(headers, product_ids, point_ids):
     emergency_levels = ["default", "high", "critical"]
     req_count = 0
-    for i in range(100):
+    for i in range(FAKEDATA_REQUESTS_COUNT):
         payload = {
             "product_id": random.choice(product_ids),
             "delivery_point_id": random.choice(point_ids),
@@ -172,7 +182,7 @@ def seed_arrivals(headers, vehicle_ids, driver_ids):
     arrival_count = 0
     if not vehicle_ids or not driver_ids:
         return
-    for i in range(10):
+    for i in range(FAKEDATA_ARRIVALS_COUNT):
         arrival_time = (datetime.now(timezone.utc) + timedelta(days=random.randint(1, 10), hours=random.randint(0, 23))).strftime("%Y-%m-%dT%H:%M:%SZ")
         payload = {
             "transport_id": random.choice(vehicle_ids),
@@ -185,7 +195,7 @@ def seed_arrivals(headers, vehicle_ids, driver_ids):
     print(f"Arrivals generated: {arrival_count}.")
 
 def run_setup():
-    login_data = {"email": "admin@admin.com", "password": "1111"}
+    login_data = {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
     login_resp = requests.post(f"{BASE_URL}/login", json=login_data)
     
     if login_resp.status_code != 200:
@@ -198,7 +208,7 @@ def run_setup():
 
     clear_before_seed(headers)
 
-    dist = {"logistician": 5, "driver": 20, "warehouse_manager": 20}
+    dist = {"logistician": FAKEDATA_LOGISTICIAN_COUNT, "driver": FAKEDATA_DRIVER_COUNT, "warehouse_manager": FAKEDATA_MANAGER_COUNT}
     emp_count = 0
     driver_ids = []
     for role, count in dist.items():
@@ -335,7 +345,7 @@ def run_setup():
                     valid_destinations.append(point["id"])
 
             for dp_id in valid_destinations:
-                for _ in range(random.randint(1, 3)):
+                for _ in range(random.randint(FAKEDATA_SKU_MIN, FAKEDATA_SKU_MAX)):
                     sku_payload = {
                         "product_id": p_id,
                         "delivery_point_id": dp_id
