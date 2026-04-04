@@ -1,5 +1,6 @@
 import requests
 import random
+from datetime import datetime, timedelta, timezone
 from faker import Faker
 
 random.seed(42)
@@ -140,7 +141,7 @@ LVIV_PRODUCTS = [
 ]
 
 def clear_before_seed(headers):
-    for endpoint in ["requests", "sku", "products", "vehicles", "delivery-points", "employees", "clients"]:
+    for endpoint in ["arrivals", "requests", "sku", "products", "vehicles", "delivery-points", "employees", "clients"]:
         resp = requests.get(f"{BASE_URL}/{endpoint}", headers=headers, params={"limit": 1000})
         if resp.status_code == 200:
             data_json = resp.json()
@@ -167,6 +168,22 @@ def seed_requests(headers, product_ids, point_ids):
             req_count += 1
     print(f"Requests (Orders) generated: {req_count}.")
 
+def seed_arrivals(headers, vehicle_ids, driver_ids):
+    arrival_count = 0
+    if not vehicle_ids or not driver_ids:
+        return
+    for i in range(10):
+        arrival_time = (datetime.now(timezone.utc) + timedelta(days=random.randint(1, 10), hours=random.randint(0, 23))).strftime("%Y-%m-%dT%H:%M:%SZ")
+        payload = {
+            "transport_id": random.choice(vehicle_ids),
+            "driver_id": random.choice(driver_ids),
+            "time_to_arrival": arrival_time
+        }
+        res = requests.post(f"{BASE_URL}/arrivals", json=payload, headers=headers)
+        if res.status_code in (200, 201):
+            arrival_count += 1
+    print(f"Arrivals generated: {arrival_count}.")
+
 def run_setup():
     login_data = {"email": "admin@admin.com", "password": "1111"}
     login_resp = requests.post(f"{BASE_URL}/login", json=login_data)
@@ -183,6 +200,7 @@ def run_setup():
 
     dist = {"logistician": 5, "driver": 20, "warehouse_manager": 20}
     emp_count = 0
+    driver_ids = []
     for role, count in dist.items():
         for _ in range(count):
             payload = {
@@ -195,6 +213,8 @@ def run_setup():
             res = requests.post(f"{BASE_URL}/employees", json=payload, headers=headers)
             if res.status_code in (200, 201):
                 emp_count += 1
+                if role == "driver":
+                    driver_ids.append(res.json().get("id"))
     print(f"Employees generated: {emp_count}.")
 
     saved_clients = []
@@ -262,6 +282,7 @@ def run_setup():
     print(f"Delivery points generated: {dp_count}.")
 
     vehicle_count = 0
+    vehicle_ids = []
     warehouse_addresses = [wh["address"] for wh in LVIV_WAREHOUSES]
     
     for v in LVIV_VEHICLES:
@@ -279,6 +300,7 @@ def run_setup():
             res = requests.post(f"{BASE_URL}/vehicles", json=payload, headers=headers)
             if res.status_code in (200, 201):
                 vehicle_count += 1
+                vehicle_ids.append(res.json().get("id"))
     print(f"Vehicles generated: {vehicle_count}.")
 
     sku_count = 0
@@ -328,6 +350,9 @@ def run_setup():
     
     if all_product_ids and points_eligible_for_requests:
         seed_requests(headers, all_product_ids, points_eligible_for_requests)
+        
+    if vehicle_ids and driver_ids:
+        seed_arrivals(headers, vehicle_ids, driver_ids)
         
     print("Database successfully seeded with data.")
 
