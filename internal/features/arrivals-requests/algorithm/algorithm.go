@@ -20,7 +20,7 @@ func stringDistance(a, b string) int {
 	if len(b) == 0 {
 		return len(a)
 	}
-	
+
 	d := make([][]int, len(a)+1)
 	for i := range d {
 		d[i] = make([]int, len(b)+1)
@@ -89,24 +89,24 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 
 	for rows.Next() {
 		var (
-			arrivalID      string
-			timeToArrival  time.Time
-			vMaxWeight     int
-			vMaxHeight     int
-			vMaxWidth      int
-			vMaxLength     int
-			vAddress       string
-			vFuelCons      int
-			vFuelType      string
-			requestID      string
-			rQuantity      int
-			rEmergency     string
-			pWeight        int
-			pHeight        int
-			pWidth         int
-			pLength        int
-			dpAddress      string
-			skuID          string
+			arrivalID     string
+			timeToArrival time.Time
+			vMaxWeight    int
+			vMaxHeight    int
+			vMaxWidth     int
+			vMaxLength    int
+			vAddress      string
+			vFuelCons     int
+			vFuelType     string
+			requestID     string
+			rQuantity     int
+			rEmergency    string
+			pWeight       int
+			pHeight       int
+			pWidth        int
+			pLength       int
+			dpAddress     string
+			skuID         string
 		)
 
 		if err := rows.Scan(
@@ -128,7 +128,7 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 		if pHeight > vMaxHeight || pWidth > vMaxWidth || pLength > vMaxLength {
 			continue // Dimensions mismatch
 		}
-		
+
 		volProduct := pHeight * pWidth * pLength * rQuantity
 		volVehicle := vMaxHeight * vMaxWidth * vMaxLength
 		if volProduct > volVehicle {
@@ -149,7 +149,7 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 
 		// Penalize distance between DP and Vehicle Depot
 		distancePenalty := stringDistance(vAddress, dpAddress)
-		score -= (distancePenalty * 10) 
+		score -= (distancePenalty * 10)
 
 		// Penalize heavy fuel consumption
 		score -= vFuelCons * 5
@@ -186,7 +186,7 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 	})
 
 	// 4. Map into domain array injecting dynamic priority value
-	var finalArrivalRequests []domain.ArrivalRequest
+	finalArrivalRequests := make([]domain.ArrivalRequest, 0)
 	currentRank := 1
 	for _, rec := range recs {
 		rec.ar.Priority = currentRank
