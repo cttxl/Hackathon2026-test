@@ -39,7 +39,7 @@ LVIV_PROVIDERS = [
 ]
 
 LVIV_STREETS = [
-    "вул. Коперника, 15", "вул. Личаківська, 33", "вул. Наукова, 7а", 
+    "вул. Коперника, 15", "вул. Личаківська, 33", "вул. Наукова, 7а",
     "вул. Кульпарківська, 226", "вул. Чорновола, 45", "вул. Сахарова, 42"
 ]
 
@@ -140,7 +140,7 @@ LVIV_PRODUCTS = [
 ]
 
 def clear_before_seed(headers):
-    for endpoint in ["sku", "products", "vehicles", "delivery-points", "employees", "clients"]:
+    for endpoint in ["requests", "sku", "products", "vehicles", "delivery-points", "employees", "clients"]:
         resp = requests.get(f"{BASE_URL}/{endpoint}", headers=headers, params={"limit": 1000})
         if resp.status_code == 200:
             data_json = resp.json()
@@ -150,19 +150,34 @@ def clear_before_seed(headers):
                     for item in items:
                         if item.get("role") != "admin":
                             requests.delete(f"{BASE_URL}/{endpoint}/{item.get('id')}", headers=headers)
-    print("База очищена.")
+    print("Database cleared.")
+
+def seed_requests(headers, product_ids, point_ids):
+    emergency_levels = ["default", "high", "critical"]
+    req_count = 0
+    for i in range(100):
+        payload = {
+            "product_id": random.choice(product_ids),
+            "delivery_point_id": random.choice(point_ids),
+            "quantity": random.randint(1, 100),
+            "emergency": emergency_levels[i % 3] 
+        }
+        res = requests.post(f"{BASE_URL}/requests", json=payload, headers=headers)
+        if res.status_code in (200, 201):
+            req_count += 1
+    print(f"Requests (Orders) generated: {req_count}.")
 
 def run_setup():
     login_data = {"email": "admin@admin.com", "password": "1111"}
     login_resp = requests.post(f"{BASE_URL}/login", json=login_data)
     
     if login_resp.status_code != 200:
-        print("Помилка входу!")
+        print("Login error!")
         return
     
     token = login_resp.json().get("token")
     headers = {"Authorization": f"Bearer {token}"}
-    print("Авторизація успішна.")
+    print("Authorization successful.")
 
     clear_before_seed(headers)
 
@@ -180,7 +195,7 @@ def run_setup():
             res = requests.post(f"{BASE_URL}/employees", json=payload, headers=headers)
             if res.status_code in (200, 201):
                 emp_count += 1
-    print(f"Згенеровано працівників: {emp_count}.")
+    print(f"Employees generated: {emp_count}.")
 
     saved_clients = []
     for name, info in lviv_companies.items():
@@ -195,41 +210,43 @@ def run_setup():
             client_id = res.json().get("id")
             saved_clients.append({"id": client_id, "name": name})
             
-    
-    print(f"Згенеровано клієнтів: {len(saved_clients) - 1}.") 
+    print(f"Clients generated: {len(saved_clients) - 1}.")
 
     main_owner_id = saved_clients[0]["id"]
     our_logistics_points = []
+    points_eligible_for_requests = []
     dp_count = 0
 
     for wh in LVIV_WAREHOUSES:
         payload = {
-            "name": wh["name"], 
-            "address": wh["address"], 
+            "name": wh["name"],
+            "address": wh["address"],
             "owner_id": main_owner_id,
-            "type": "warehouse", 
-            "height": wh["h"], 
-            "width": wh["w"], 
+            "type": "warehouse",
+            "height": wh["h"],
+            "width": wh["w"],
             "length": wh["l"]
         }
         res = requests.post(f"{BASE_URL}/delivery-points", json=payload, headers=headers)
-        if res.status_code in (200, 201): 
-            our_logistics_points.append({"id": res.json().get("id"), "name": wh["name"]})
+        if res.status_code in (200, 201):
+            p_id = res.json().get("id")
+            our_logistics_points.append({"id": p_id, "name": wh["name"]})
+            points_eligible_for_requests.append(p_id)
             dp_count += 1
 
     for prov in LVIV_PROVIDERS:
         payload = {
-            "name": prov["name"], 
-            "address": prov["address"], 
+            "name": prov["name"],
+            "address": prov["address"],
             "owner_id": main_owner_id,
             "type": "provider"
         }
         res = requests.post(f"{BASE_URL}/delivery-points", json=payload, headers=headers)
-        if res.status_code in (200, 201): 
+        if res.status_code in (200, 201):
             our_logistics_points.append({"id": res.json().get("id"), "name": prov["name"]})
             dp_count += 1
 
-    for cli in saved_clients[1:]: 
+    for cli in saved_clients[1:]:
         for i in range(2):
             payload = {
                 "name": f"Філія {cli['name']} #{i+1}",
@@ -239,8 +256,10 @@ def run_setup():
             }
             res = requests.post(f"{BASE_URL}/delivery-points", json=payload, headers=headers)
             if res.status_code in (200, 201):
+                p_id = res.json().get("id")
+                points_eligible_for_requests.append(p_id)
                 dp_count += 1
-    print(f"Згенеровано точок доставки: {dp_count}.")
+    print(f"Delivery points generated: {dp_count}.")
 
     vehicle_count = 0
     warehouse_addresses = [wh["address"] for wh in LVIV_WAREHOUSES]
@@ -260,10 +279,11 @@ def run_setup():
             res = requests.post(f"{BASE_URL}/vehicles", json=payload, headers=headers)
             if res.status_code in (200, 201):
                 vehicle_count += 1
-    print(f"Згенеровано транспортних засобів: {vehicle_count}.")
+    print(f"Vehicles generated: {vehicle_count}.")
 
     sku_count = 0
     prod_count = 0
+    all_product_ids = []
 
     for prod in LVIV_PRODUCTS:
         payload = {
@@ -278,6 +298,7 @@ def run_setup():
         if res.status_code in (200, 201):
             prod_count += 1
             p_id = res.json().get("id")
+            all_product_ids.append(p_id)
             cat = prod["cat"]
 
             valid_destinations = []
@@ -294,16 +315,21 @@ def run_setup():
             for dp_id in valid_destinations:
                 for _ in range(random.randint(1, 3)):
                     sku_payload = {
-                        "product_id": p_id, 
+                        "product_id": p_id,
                         "delivery_point_id": dp_id
                     }
                     sku_res = requests.post(f"{BASE_URL}/sku", json=sku_payload, headers=headers)
                     if sku_res.status_code in (200, 201):
                         sku_count += 1
                         
-    print(f"Згенеровано товарів: {prod_count}.")
-    print(f"Згенеровано SKU: {sku_count}.")
-    print("База успішно наповнена даними.")
+    print(f"Products generated: {prod_count}.")
+    print(f"SKUs generated: {sku_count}.")
+    
+    
+    if all_product_ids and points_eligible_for_requests:
+        seed_requests(headers, all_product_ids, points_eligible_for_requests)
+        
+    print("Database successfully seeded with data.")
 
 if __name__ == "__main__":
     run_setup()
