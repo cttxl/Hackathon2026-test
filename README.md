@@ -206,7 +206,7 @@ The actionable demand requests representing units needed at a Delivery Point loc
 - `product_id`: UUID, required, foreign key referencing `product.id`.
 - `quantity`: integer, required.
 - `delivery_point_id`: UUID, required, foreign key referencing `delivery_point.id`.
-- `emergency`: string. Optional (defaults to `default`). Enum: `default`, `hight`, `critical`.
+- `emergency`: string. Optional (defaults to `default`). Enum: `default`, `high`, `critical`.
 - `status`: string. Read-only on creation (defaults to `pending`). Enum: `pending`, `accepted`, `in_transit`, `delivered`, `cancelled`. Can be modified via `PATCH`.
 
 **Query Filters (`GET`):**

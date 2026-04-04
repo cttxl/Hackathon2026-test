@@ -120,5 +120,5 @@ func (r *ArrivalRequestRepository) Delete(ctx context.Context, id string) error 
 }
 
 func (r *ArrivalRequestRepository) GetRecommended(ctx context.Context) ([]domain.ArrivalRequest, error) {
-	return algorithm.GetRecommended(ctx)
+	return algorithm.GetRecommended(ctx, r.db)
 }
