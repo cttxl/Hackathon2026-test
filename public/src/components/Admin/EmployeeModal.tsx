@@ -6,13 +6,15 @@ interface EmployeeModalProps {
   employee?: Employee | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (emp: Employee) => void;
+  onSave: (emp: Employee, password?: string) => void;
   onDelete: (id: string) => void;
-  onResetPassword: (id: string) => void;
 }
 
-export function EmployeeModal({ employee, isOpen, onClose, onSave, onDelete, onResetPassword }: EmployeeModalProps) {
+export function EmployeeModal({ employee, isOpen, onClose, onSave, onDelete }: EmployeeModalProps) {
   const [formData, setFormData] = useState<Partial<Employee>>({});
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (employee) {
@@ -25,6 +27,9 @@ export function EmployeeModal({ employee, isOpen, onClose, onSave, onDelete, onR
         role: 'Warehouse Operator'
       });
     }
+    setPassword('');
+    setConfirmPassword('');
+    setError(null);
   }, [employee, isOpen]);
 
   if (!isOpen) return null;
@@ -33,7 +38,11 @@ export function EmployeeModal({ employee, isOpen, onClose, onSave, onDelete, onR
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    onSave(formData as Employee);
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    onSave(formData as Employee, password || undefined);
   };
 
   return (
@@ -86,15 +95,33 @@ export function EmployeeModal({ employee, isOpen, onClose, onSave, onDelete, onR
             </select>
           </div>
 
-          {isEditing && (
-            <div className="input-group" style={{ marginTop: '10px' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => onResetPassword(employee.id)}
-              >
-                Reset Password
-              </button>
+          <div className="input-group">
+            <label>{isEditing ? 'Change Password' : 'Password'}</label>
+            <input
+              type="password"
+              placeholder={isEditing ? 'Enter new password to change' : 'Enter password'}
+              required={!isEditing}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Confirm {isEditing ? 'New ' : ''}Password</label>
+            <input
+              type="password"
+              placeholder="Confirm password"
+              required={!isEditing || !!password}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+
+          {error && (
+            <div style={{ color: '#ef4444', fontSize: '14px', marginTop: '-8px', marginBottom: '16px' }}>
+              {error}
             </div>
           )}
 
