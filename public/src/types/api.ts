@@ -41,6 +41,7 @@ export interface ApiUpdateEmployeeRequest {
   email?: string;
   phone?: string;
   role?: ApiEmployeeRole;
+  password?: string;
 }
 
 // Custom UI Type for Frontend Context to replace mockEmployee
