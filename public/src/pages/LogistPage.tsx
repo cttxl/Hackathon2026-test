@@ -11,8 +11,11 @@ import {
   patchArrival,
   getEmployees,
   getVehicles,
+  getDeliveryPoints,
+  getProducts,
+  getSkus,
 } from '../services/api';
-import type { ApiArrival, ApiVehicle, ApiEmployee, Order, OrderStatus } from '../types/api';
+import type { ApiArrival, ApiVehicle, ApiEmployee, ApiDeliveryPoint, ApiProduct, Order, OrderStatus } from '../types/api';
 import './LogistPage.css';
 import './AdminPage.css';
 
@@ -66,6 +69,8 @@ export function LogistPage() {
   const [arrivals, setArrivals] = useState<ApiArrival[]>([]);
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [employees, setEmployees] = useState<ApiEmployee[]>([]);
+  const [deliveryPoints, setDeliveryPoints] = useState<ApiDeliveryPoint[]>([]);
+  const [inventoryMap, setInventoryMap] = useState<Map<string, ApiProduct[]>>(new Map());
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
@@ -111,20 +116,47 @@ export function LogistPage() {
     setLoading(true);
     setApiError(null);
     try {
-      const [arrivalsRes, vehiclesRes, employeesRes] = await Promise.all([
+      const [arrivalsRes, vehiclesRes, employeesRes, dpRes, prodRes] = await Promise.all([
         getArrivals(),
         getVehicles(),
         getEmployees(1, 200),
+        getDeliveryPoints(),
+        getProducts(),
       ]);
+      
+      const dps = dpRes?.data || [];
+      const prods = prodRes?.data || [];
+
+      // Set map points INSTANTLY so they don't 'disappear at first'
       setArrivals(arrivalsRes?.data || []);
       setVehicles(vehiclesRes?.data || []);
       setEmployees(employeesRes?.data || []);
+      setDeliveryPoints(dps);
+      
+      // Fetch SKUs asynchronously without blocking rendering
+      Promise.all(
+        dps.map(dp => getSkus(dp.id).then(res => ({ pointId: dp.id, skus: res?.data || [] })))
+      ).then(skusArray => {
+        const pMap = new Map(prods.map(p => [p.id, p]));
+        const nextInvMap = new Map<string, ApiProduct[]>();
+        
+        skusArray.forEach(({ pointId, skus }) => {
+          const dpProducts = skus.map(s => pMap.get(s.product_id)).filter(Boolean) as ApiProduct[];
+          nextInvMap.set(pointId, dpProducts);
+        });
+        setInventoryMap(nextInvMap);
+      }).catch(err => {
+        console.error('Failed to load internal SKU inventories', err);
+      });
+
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load data.';
       setApiError(msg);
       setArrivals([]);
       setVehicles([]);
       setEmployees([]);
+      setDeliveryPoints([]);
+      setInventoryMap(new Map());
     } finally {
       setLoading(false);
     }
@@ -231,7 +263,7 @@ export function LogistPage() {
 
         {/* Left — Map */}
         <div className="map-panel">
-          <MapWidget orders={orders} />
+          <MapWidget orders={orders} deliveryPoints={deliveryPoints} inventoryMap={inventoryMap} vehicles={vehicles} />
         </div>
 
         {/* Right — Orders */}
