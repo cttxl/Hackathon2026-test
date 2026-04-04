@@ -18,6 +18,8 @@ type Config struct {
 	SERVER_WRITE_TIMEOUT    int    `env:"SERVER_WRITE_TIMEOUT"`
 	SERVER_IDLE_TIMEOUT     int    `env:"SERVER_IDLE_TIMEOUT"`
 	SERVER_SHUTDOWN_TIMEOUT int    `env:"SERVER_SHUTDOWN_TIMEOUT"`
+	JWT_SECRET              string `env:"JWT_SECRET"`
+	JWT_EXPIRATION_HOURS    int    `env:"JWT_EXPIRATION_HOURS"`
 }
 
 func NewConfig() *Config {
@@ -33,6 +35,8 @@ func NewConfig() *Config {
 		SERVER_WRITE_TIMEOUT:    envAsInt("SERVER_WRITE_TIMEOUT"),
 		SERVER_IDLE_TIMEOUT:     envAsInt("SERVER_IDLE_TIMEOUT"),
 		SERVER_SHUTDOWN_TIMEOUT: envAsInt("SERVER_SHUTDOWN_TIMEOUT"),
+		JWT_SECRET:              env("JWT_SECRET"),
+		JWT_EXPIRATION_HOURS:    envAsInt("JWT_EXPIRATION_HOURS"),
 	}
 }
 
@@ -53,3 +57,4 @@ func envAsInt(key string) int {
 	log.Fatalf("environment variable %s is not set", key)
 	return 0
 }
+
