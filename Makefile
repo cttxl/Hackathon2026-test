@@ -59,7 +59,7 @@ migrate-action:
 		$(action)
 
 test:
-	@$(DOCKER_COMPOSE) run --rm tests python tests/tests.py
+	@$(DOCKER_COMPOSE) run --rm tests python api/api.py
 
 fakedata:
 	@$(DOCKER_COMPOSE) run --rm tests python fakedata/fakedata.py

@@ -44,16 +44,21 @@ func (r *EmployeeRepository) GetByID(ctx context.Context, id string) (domain.Emp
 	return e, err
 }
 
-func (r *EmployeeRepository) List(ctx context.Context, page, limit int) ([]domain.Employee, int, error) {
-	total, err := r.Count(ctx, "employees", "")
+func (r *EmployeeRepository) List(ctx context.Context, page, limit int, excludeAdmin bool) ([]domain.Employee, int, error) {
+	whereClause := ""
+	if excludeAdmin {
+		whereClause = "WHERE role != 'admin'"
+	}
+
+	total, err := r.Count(ctx, "employees", whereClause)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * limit
-	rows, err := r.DB().QueryContext(ctx,
-		`SELECT id, fullname, email, phone, role, created_at, updated_at
-		 FROM employees ORDER BY created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
+	query := fmt.Sprintf(`SELECT id, fullname, email, phone, role, created_at, updated_at
+		 FROM employees %s ORDER BY created_at DESC LIMIT $1 OFFSET $2`, whereClause)
+	rows, err := r.DB().QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}

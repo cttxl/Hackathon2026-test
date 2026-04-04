@@ -8,10 +8,10 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/cttxl/Hackathon2026-test/internal/core/domain"
-	repo "github.com/cttxl/Hackathon2026-test/internal/features/employees/repository/postgres"
-	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/response"
-	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/request"
 	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/middleware"
+	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/request"
+	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/response"
+	repo "github.com/cttxl/Hackathon2026-test/internal/features/employees/repository/postgres"
 )
 
 type EmployeeHandler struct {
@@ -24,7 +24,8 @@ func NewEmployeeHandler(repo *repo.EmployeeRepository) *EmployeeHandler {
 
 func (h *EmployeeHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/employees", func(r chi.Router) {
-		r.With(middleware.AdminOnly).Post("/", h.Create)
+		r.Use(middleware.AdminOnly)
+		r.Post("/", h.Create)
 		r.Get("/", h.List)
 		r.Get("/{id}", h.GetByID)
 		r.Patch("/{id}", h.Update)
@@ -83,7 +84,7 @@ func (h *EmployeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 	page, limit := request.Pagination(r)
 	
-	es, total, err := h.repo.List(r.Context(), page, limit)
+	es, total, err := h.repo.List(r.Context(), page, limit, false)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
