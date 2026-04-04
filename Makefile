@@ -59,4 +59,7 @@ migrate-action:
 		$(action)
 
 test:
-	@$(DOCKER_COMPOSE) run --rm tests
+	@$(DOCKER_COMPOSE) run --rm tests python tests/tests.py
+
+fakedata:
+	@$(DOCKER_COMPOSE) run --rm tests python fakedata/fakedata.py
