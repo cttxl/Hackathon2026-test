@@ -1,7 +1,18 @@
-import { useState, useEffect } from "react";
+import { useRef, MouseEvent } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { LoginMenu } from './components/LoginMenu';
+import { AdminPage } from './pages/AdminPage';
+import { LogistPage } from './pages/LogistPage';
+import { DriverPage } from './pages/DriverPage';
+import { WarehousePage } from './pages/WarehousePage';
+import './index.css';
 
-const API_URL = "http://localhost:8080";
+function AppInner() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/';
 
+<<<<<<< Updated upstream
 type UserInfo = {
   id: string;
   type: string;
@@ -123,110 +134,57 @@ export default function App() {
       case "requests": return ["product_id", "quantity", "delivery_point_id", "emergency"];
       case "vehicles": return ["name", "fuel_type", "fuel_consumption", "max_weight", "max_height", "max_width", "max_length", "address"];
       default: return [];
+=======
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      containerRef.current.style.setProperty('--mouse-x', `${x}px`);
+      containerRef.current.style.setProperty('--mouse-y', `${y}px`);
+>>>>>>> Stashed changes
     }
   };
 
   return (
-    <div className="layout">
-      {/* SIDEBAR */}
-      <aside className="sidebar glass">
-        <div className="brand">
-          ✨ NexusUI
-        </div>
-
-        <div className="auth-panel glass panel">
-          {user ? (
-            <>
-              <div>
-                <div style={{ marginBottom: "0.5rem" }}>
-                  <span className="badge">Authenticated</span>
-                </div>
-                <div className="user-snippet">
-                  <div><strong>ID:</strong> {user.id.substring(0,8)}...</div>
-                  <div><strong>Type:</strong> {user.type}</div>
-                  {user.role && <div><strong>Role:</strong> {user.role}</div>}
-                </div>
-              </div>
-              <button className="btn btn-secondary" onClick={logout}>Sign Out</button>
-            </>
-          ) : (
-            <>
-              <h3>Admin Identity</h3>
-              <input 
-                className="input-field" 
-                placeholder="Email" 
-                value={email}
-                onChange={e => setEmail(e.target.value)} 
-              />
-              <input 
-                className="input-field" 
-                type="password" 
-                placeholder="Password" 
-                value={password}
-                onChange={e => setPassword(e.target.value)} 
-              />
-              <button className="btn" onClick={login}>Authenticate</button>
-            </>
-          )}
-        </div>
-
-        <div className="nav-menu">
-          <h3 style={{ marginLeft: "1rem", marginBottom: "0.5rem", fontSize: "0.85rem", textTransform: "uppercase", color: "var(--text-muted)"}}>
-            Endpoints
-          </h3>
-          {tabs.map((t) => (
-            <button 
-              key={t}
-              className={`nav-item ${activeTab === t ? "active" : ""}`}
-              onClick={() => setActiveTab(t)}
-            >
-              /{t}
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT */}
-      <main className="main-content">
-        <header className="status-bar glass">
-          <h2>Endpoint Preview: <span style={{ color: "var(--accent-color)" }}>/{activeTab}</span></h2>
-          <button className="btn btn-secondary" onClick={() => fetchList(activeTab)}>
-            {loading ? "Refreshing..." : "↻ Refresh Data"}
-          </button>
+    <div
+      className="app-container"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+    >
+      {/* Brand bar only shown on the login page */}
+      {isLoginPage && (
+        <header className="brand-header">
+          <h1 className="brand-title">LogicFlow</h1>
         </header>
+      )}
 
-        <div className="grid-content">
-          <div className="panel glass" style={{ gridColumn: getFormFields().length > 0 ? "1" : "1 / 3" }}>
-            <h3>Response Inspector</h3>
-            <pre className="json-viewer">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </div>
-
-          {getFormFields().length > 0 && (
-            <div className="panel glass">
-              <h3>Create Record</h3>
-              <form onSubmit={createItem} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
-                <div className="form-grid">
-                  {getFormFields().map((field) => (
-                    <input
-                      key={field}
-                      className="input-field"
-                      placeholder={field}
-                      value={formData[field] || ""}
-                      onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                      required={field !== "emergency"} // simple workaround
-                    />
-                  ))}
-                </div>
-                <div style={{ marginTop: 'auto' }}>
-                  <button type="submit" className="btn" style={{ width: '100%' }}>Make POST request</button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
+      <main className="app-main">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div className="login-route-wrapper">
+                <LoginMenu />
+              </div>
+            }
+          />
+          <Route path="/admin"     element={<AdminPage />} />
+          <Route path="/logist"    element={<LogistPage />} />
+          <Route path="/driver"    element={<DriverPage />} />
+          <Route path="/warehouse" element={<WarehousePage />} />
+        </Routes>
       </main>
     </div>
   );
 }
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppInner />
+    </BrowserRouter>
+  );
+}
+
+export default App;
