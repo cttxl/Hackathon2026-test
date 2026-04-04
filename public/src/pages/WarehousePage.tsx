@@ -1,29 +1,18 @@
-import { useState, useEffect, useCallback, Component, ErrorInfo, ReactNode } from 'react';
+import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { Header } from '../components/Shared/Header';
 import { WarehouseSelector } from '../components/Warehouse/WarehouseSelector';
 import { InventoryList } from '../components/Warehouse/InventoryList';
-import { OperationsQueue } from '../components/Warehouse/OperationsQueue';
+import { RequestsQueue } from '../components/Warehouse/RequestsQueue';
 import {
   getDeliveryPoints,
   getSkus,
-  getRequests,
-  getArrivals,
-  patchArrival,
   patchRequest,
-  getEmployees,
-  getVehicles
 } from '../services/api';
-import { ApiDeliveryPoint, ApiSku, ApiArrival, ApiRequest, Order, ApiEmployee, ApiVehicle } from '../types/api';
+import { ApiDeliveryPoint, ApiSku } from '../types/api';
 import './WarehousePage.css';
 import './AdminPage.css'; // Global dashboard styles
 
-const API_TO_UI_STATUS: Record<string, any> = {
-  pending: 'Pending',
-  accepted: 'Accepted',
-  shipped: 'In Transit',
-  delivered: 'Delivered',
-  cancelled: 'Canceled',
-};
+
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
   constructor(props: { children: ReactNode }) {
@@ -51,40 +40,12 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-function toOrder(
-  arrival: ApiArrival,
-  vehicleMap: Map<string, string>,
-  driverMap: Map<string, string>,
-  index: number,
-): Order {
-  return {
-    id: arrival.id,
-    transportName: vehicleMap.get(arrival.transport_id) ?? arrival.transport_id,
-    driverName: driverMap.get(arrival.driver_id) ?? arrival.driver_id,
-    placeOfDeparture: 'N/A',
-    timeToDeparture: 'N/A',
-    timeOfArrival: arrival.time_to_arrival
-      ? new Date(arrival.time_to_arrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : '—',
-    status: API_TO_UI_STATUS[arrival.status] ?? 'Pending',
-    priority: index + 1,
-    _raw: arrival,
-  };
-}
 
 export function WarehousePage() {
   const [warehouses, setWarehouses] = useState<ApiDeliveryPoint[]>([]);
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
-
   const [skus, setSkus] = useState<ApiSku[]>([]);
-  const [arrivals, setArrivals] = useState<ApiArrival[]>([]);
-  const [requests, setRequests] = useState<ApiRequest[]>([]);
-
-  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
-  const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
-
   const [loading, setLoading] = useState(true);
-  const [loadingOps, setLoadingOps] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   // ── Load All Warehouses ──────────────────────────────────────────────────
@@ -98,82 +59,41 @@ export function WarehousePage() {
           setSelectedWarehouseId(data[0].id);
         }
       } catch (err) {
-        console.error("Warehouse fetch error:", err);
+        console.error('Warehouse fetch error:', err);
         setApiError('Failed to fetch warehouses. API might be offline.');
         setWarehouses([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchWarehouses();
   }, []);
 
-  // ── Load Data for Selected Warehouse ──────────────────────────────────────
-  const loadWarehouseData = useCallback(async () => {
+  // ── Load SKUs for Selected Warehouse ──────────────────────────────────────
+  useEffect(() => {
     if (!selectedWarehouseId) return;
-
-    setLoadingOps(true);
-    try {
-      const [skuRes, arrivalRes, requestRes, empRes, vehRes] = await Promise.all([
-        getSkus(selectedWarehouseId),
-        getArrivals(), // Showing all arrivals for now
-        getRequests({ delivery_point_id: selectedWarehouseId }),
-        getEmployees(1, 200),
-        getVehicles()
-      ]);
-
-      setSkus(skuRes.data || []);
-      setArrivals(arrivalRes.data || []);
-      setRequests(requestRes.data || []);
-      setEmployees(empRes.data || []);
-      setVehicles(vehRes.data || []);
-    } catch (err) {
-      console.error("Warehouse sync error:", err);
-      setApiError('Failed to sync warehouse data.');
-      // Safety: ensure data is never null
-      setSkus([]);
-      setArrivals([]);
-      setRequests([]);
-      setEmployees([]);
-      setVehicles([]);
-    } finally {
-      setLoading(false);
-      setLoadingOps(false);
-    }
+    const fetchSkus = async () => {
+      try {
+        const res = await getSkus(selectedWarehouseId);
+        setSkus(res?.data || []);
+      } catch (err) {
+        console.error('SKU fetch error:', err);
+        setSkus([]);
+      }
+    };
+    fetchSkus();
   }, [selectedWarehouseId]);
 
-  useEffect(() => {
-    loadWarehouseData();
-  }, [selectedWarehouseId, loadWarehouseData]);
-
   // ── Handlers ─────────────────────────────────────────────────────────────
-  const handleAcceptArrival = async (id: string) => {
-    try {
-      await patchArrival(id, { status: 'delivered' });
-      await loadWarehouseData();
-    } catch (err) {
-      alert('Failed to update arrival status.');
-    }
-  };
-
   const handleShipRequest = async (id: string) => {
     try {
       await patchRequest(id, { status: 'shipped' });
-      await loadWarehouseData();
+      // RequestsQueue re-fetches on its own when selectedWarehouseId changes;
+      // trigger a lightweight re-mount by toggling a key if needed.
     } catch (err) {
       alert('Failed to update request status.');
     }
   };
-
-  // Build the orders
-  const safeVehicles = vehicles || [];
-  const vehicleMap = new Map<string, string>();
-  safeVehicles.forEach(v => vehicleMap.set(v.id, v.name));
-
-  const safeEmployees = employees || [];
-  const driverMap = new Map<string, string>();
-  safeEmployees.forEach(e => driverMap.set(e.id, e.fullname));
-
-  const safeArrivals = arrivals || [];
-  const orders: Order[] = safeArrivals.map((arr, idx) => toOrder(arr, vehicleMap, driverMap, idx));
 
   if (loading) {
     return (
@@ -220,12 +140,9 @@ export function WarehousePage() {
                 loading={loading}
               />
 
-              <OperationsQueue
-                orders={orders || []}
-                requests={requests || []}
-                onAcceptArrival={handleAcceptArrival}
+              <RequestsQueue
+                selectedWarehouseId={selectedWarehouseId}
                 onShipRequest={handleShipRequest}
-                loading={loadingOps}
               />
             </>
           )}
