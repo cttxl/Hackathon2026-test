@@ -141,8 +141,8 @@ export async function getArrivalRequests(arrivalId: string): Promise<ApiListResp
 
 // ─── SKU / Requests ──────────────────────────────────────────────────────────
 
-export async function getSkus(pointId: string): Promise<ApiListResponse<ApiSku>> {
-  return apiFetch<ApiListResponse<ApiSku>>(`/sku?delivery_point_id=${pointId}&limit=100`);
+export async function getSkus(pointId: string, page = 1, limit = 10): Promise<ApiListResponse<ApiSku>> {
+  return apiFetch<ApiListResponse<ApiSku>>(`/sku?delivery_point_id=${pointId}&page=${page}&limit=${limit}`);
 }
 
 export async function getRequests(filters?: { delivery_point_id?: string; sku_id?: string; status?: RequestStatus }): Promise<ApiListResponse<ApiRequest>> {
