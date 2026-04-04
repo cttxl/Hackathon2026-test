@@ -35,9 +35,6 @@ import (
 	arrivalsRepo "github.com/cttxl/Hackathon2026-test/internal/features/arrivals/repository/postgres"
 	arrivalsHttp "github.com/cttxl/Hackathon2026-test/internal/features/arrivals/transport/http"
 
-	asRepo "github.com/cttxl/Hackathon2026-test/internal/features/arrivals-schedule/repository/postgres"
-	asHttp "github.com/cttxl/Hackathon2026-test/internal/features/arrivals-schedule/transport/http"
-
 	arRepo "github.com/cttxl/Hackathon2026-test/internal/features/arrivals-requests/repository/postgres"
 	arHttp "github.com/cttxl/Hackathon2026-test/internal/features/arrivals-requests/transport/http"
 	authRepo "github.com/cttxl/Hackathon2026-test/internal/features/auth/repository/postgres"
@@ -84,7 +81,7 @@ func main() {
 		skuHttp.NewSKUHandler(skuRepo.NewSKURepository(db)).RegisterRoutes(r)
 		requestsHttp.NewRequestHandler(requestsRepo.NewRequestRepository(db)).RegisterRoutes(r)
 		arrivalsHttp.NewArrivalHandler(arrivalsRepo.NewArrivalRepository(db)).RegisterRoutes(r)
-		asHttp.NewArrivalScheduleHandler(asRepo.NewArrivalScheduleRepository(db)).RegisterRoutes(r)
+
 		arHttp.NewArrivalRequestHandler(arRepo.NewArrivalRequestRepository(db)).RegisterRoutes(r)
 	})
 

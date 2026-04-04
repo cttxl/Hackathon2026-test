@@ -116,7 +116,7 @@ CREATE TABLE arrivals (
     driver_id UUID NOT NULL,
 
     time_to_arrival TIMESTAMPTZ NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'shipped', 'delivered', 'cancelled')),
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'shipped', 'delivered', 'cancelled')), --TODO: CHANGE
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -125,16 +125,7 @@ CREATE TABLE arrivals (
     FOREIGN KEY (driver_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
-CREATE TABLE arrival_schedules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    arrival_id UUID NOT NULL,
-
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (arrival_id) REFERENCES arrivals(id) ON DELETE CASCADE
-);
 
 CREATE TABLE arrivals_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,5 +1,5 @@
 DROP TABLE IF EXISTS arrivals_requests;
-DROP TABLE IF EXISTS arrival_schedules;
+
 DROP TABLE IF EXISTS arrivals;
 DROP TABLE IF EXISTS requests;
 DROP TABLE IF EXISTS sku;
