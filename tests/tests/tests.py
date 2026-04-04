@@ -152,8 +152,10 @@ def test_employees(h: dict) -> str:
     check("GET deleted employee → 404", resp.status_code == 404)
 
     # Re-create for later use and return id
-    payload["email"] = "testdriver_for_tests@example.com"
+    import uuid
+    payload["email"] = f"testdriver_for_tests_{uuid.uuid4().hex}@example.com"
     resp = requests.post(f"{BASE_URL}/employees", json=payload, headers=h)
+    check("Re-create employee", resp.status_code in (200, 201), f"{resp.status_code} {resp.text}")
     return resp.json().get("id", "")
 
 
@@ -211,8 +213,10 @@ def test_clients(h: dict) -> str:
     check("GET deleted client → 404", resp.status_code == 404)
 
     # Re-create for later use
-    payload["email"] = "testclient_for_tests@example.com"
+    import uuid
+    payload["email"] = f"testclient_for_tests_{uuid.uuid4().hex}@example.com"
     resp = requests.post(f"{BASE_URL}/clients", json=payload, headers=h)
+    check("Re-create client", resp.status_code in (200, 201), f"{resp.status_code} {resp.text}")
     return resp.json().get("id", "")
 
 
