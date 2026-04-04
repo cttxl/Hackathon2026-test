@@ -6,7 +6,6 @@ import {
   createEmployee,
   patchEmployee,
   deleteEmployee,
-  resetEmployeePassword,
 } from '../services/api';
 import type { ApiEmployee, ApiEmployeeRole, UIEmployee as Employee } from '../types/api';
 import './AdminPage.css';
@@ -69,7 +68,7 @@ export function AdminPage() {
   const handleEditClick = (emp: Employee) => { setSelected(emp); setIsModalOpen(true); };
   const handleClose = () => { setIsModalOpen(false); setSelected(null); };
 
-  const handleSave = async (emp: Employee) => {
+  const handleSave = async (emp: Employee, password?: string) => {
     setSaving(true);
     try {
       if (selected) {
@@ -79,15 +78,16 @@ export function AdminPage() {
           email: emp.email,
           phone: emp.phone,
           role: ROLE_UI_TO_API[emp.role],
+          password: password,
         });
       } else {
-        // Create new — password required; use placeholder so user can reset
+        // Create new
         await createEmployee({
           fullname: emp.fullName,
           email: emp.email,
           phone: emp.phone,
           role: ROLE_UI_TO_API[emp.role],
-          password: 'ChangeMe123!',
+          password: password || 'ChangeMe123!',
         });
       }
       await loadEmployees();
@@ -117,15 +117,6 @@ export function AdminPage() {
     }
   };
 
-  const handleResetPassword = async (id: string) => {
-    try {
-      await resetEmployeePassword(id);
-      alert('Password reset link sent to employee.');
-    } catch {
-      alert(`Password reset requested for employee ID: ${id}\n(API not reachable — no email sent)`);
-    }
-    handleClose();
-  };
 
   if (loading) {
     return (
@@ -144,7 +135,7 @@ export function AdminPage() {
     <div className="admin-dashboard-container">
       <Header title="Admin Dashboard">
         <button className="btn-primary" onClick={handleHireClick}>
-          Hire new worker
+          Create new worker
         </button>
       </Header>
 
@@ -208,7 +199,6 @@ export function AdminPage() {
         onClose={handleClose}
         onSave={handleSave}
         onDelete={handleDelete}
-        onResetPassword={handleResetPassword}
       />
     </div>
   );
