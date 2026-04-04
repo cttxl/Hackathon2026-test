@@ -79,3 +79,55 @@ html, body, #root {
   height: 100%;
   overflow: auto;
 }
+
+/* Custom Map Tooltips */
+.leaflet-tooltip.glass-tooltip {
+  background: rgba(22, 26, 35, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  padding: 12px 14px !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  pointer-events: none;
+}
+
+.leaflet-tooltip.glass-tooltip::before {
+  display: none !important;
+}
+
+.glass-tooltip-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.glass-tooltip-type {
+  font-size: 12px;
+  color: #38bdf8;
+  font-weight: 500;
+  text-transform: capitalize;
+  display: block;
+}
+
+.glass-tooltip-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 8px 0;
+}
+
+.glass-tooltip-list {
+  padding-left: 14px;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.glass-tooltip-list span {
+  display: inline-block;
+  color: #94a3b8;
+  margin-left: 4px;
+}
