@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cttxl/Hackathon2026-test/internal/core/domain"
+	"github.com/cttxl/Hackathon2026-test/internal/features/arrivals-requests/algorithm"
 )
 
 type ArrivalRequestRepository struct {
@@ -116,4 +117,8 @@ func (r *ArrivalRequestRepository) Update(ctx context.Context, id string, input 
 func (r *ArrivalRequestRepository) Delete(ctx context.Context, id string) error {
 	_, err := r.db.ExecContext(ctx, `DELETE FROM arrivals_requests WHERE id = $1`, id)
 	return err
+}
+
+func (r *ArrivalRequestRepository) GetRecommended(ctx context.Context) ([]domain.ArrivalRequest, error) {
+	return algorithm.GetRecommended(ctx)
 }
