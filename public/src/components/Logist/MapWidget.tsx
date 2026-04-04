@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import type { Order } from '../../types/api';
+import type { Order, ApiDeliveryPoint, ApiProduct, ApiVehicle } from '../../types/api';
 
 // ── Fix default icon paths ─────────────────────────────────────────────────
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -71,6 +71,56 @@ const destIcon = L.divIcon({
   popupAnchor: [0, -12],
 });
 
+function getPointIcon(type: string) {
+  let color = '#f59e0b';
+  let emoji = '';
+  let size = 16;
+
+  if (type === 'warehouse') {
+    emoji = '🏠'; // House / Warehouse
+    size = 20;
+  } else if (type === 'client_point') {
+    emoji = '📍';
+    size = 18;
+  } else if (type === 'provider') {
+    emoji = '🏭';
+    size = 20;
+  } else if (type === 'vehicle') {
+    emoji = '🚚'; // Vehicle / Truck
+    size = 24;
+  }
+
+  if (emoji) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: ${size}px;
+        line-height: ${size}px;
+        text-shadow: 0px 0px 5px rgba(255,255,255,1), 0px 0px 10px rgba(255,255,255,0.8);
+      ">${emoji}</div>`,
+      iconSize: [size, size],
+      iconAnchor: [size/2, size/2],
+    });
+  }
+
+  // Fallback simple dot
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:14px;height:14px;
+      background:${color};
+      border-radius:3px;
+      border:2px solid #fff;
+      box-shadow:0 0 8px ${color};
+    "></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+}
+
 // ── Known location coordinates ─────────────────────────────────────────────
 const KNOWN_COORDS: Record<string, [number, number]> = {
   'Central Hub Lviv': [49.8397, 24.0297],
@@ -79,12 +129,35 @@ const KNOWN_COORDS: Record<string, [number, number]> = {
   'Dnipro Logistics Center': [48.4647, 35.0462],
   'Warsaw Relay Point': [52.2297, 21.0122],
   'Lviv Hub': [49.8397, 24.0297],
+  'вул. Тестова, 1, Львів': [49.8350, 24.0300],
+  'вул. Шевченка, 317, Львів': [49.8524, 23.9613],
+  'вул. Городоцька, 355, Львів': [49.8188, 23.9472],
+  'вул. Зелена, 153, Львів': [49.8143, 24.0534],
+  'вул. Джорджа Вашингтона, 8': [49.8213, 24.0673],
+  'вул. Стрийська, 45': [49.8055, 24.0182],
 };
 
 const LVIV: [number, number] = [49.8397, 24.0297];
 
 function getCoords(name: string): [number, number] {
   return KNOWN_COORDS[name] ?? LVIV;
+}
+
+function getAddressCoords(address: string | undefined, seedStr: string, geoMap: Record<string, [number, number]>): [number, number] {
+  if (!address) return LVIV;
+  if (KNOWN_COORDS[address]) return KNOWN_COORDS[address];
+  const resolved = geoMap[address];
+  if (resolved && resolved[0] !== 0) return resolved;
+
+  // Deterministic fallback
+  const seed = seedStr.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const latOffset = ((seed * 13) % 100 - 50) / 1000.0;
+  const lngOffset = ((seed * 17) % 100 - 50) / 1000.0;
+  return [49.8397 + latOffset, 24.0297 + lngOffset];
+}
+
+function getDeliveryPointCoords(dp: ApiDeliveryPoint, geoMap: Record<string, [number, number]>): [number, number] {
+  return getAddressCoords(dp.address, dp.id || dp.name || 'fallback', geoMap);
 }
 
 /** Generate realistic intermediate waypoints between two coordinates */
@@ -131,10 +204,66 @@ function FitRoutes({ routes }: { routes: [number, number][][] }) {
 // ── MapWidget ──────────────────────────────────────────────────────────────
 interface MapWidgetProps {
   orders?: Order[];
+  deliveryPoints?: ApiDeliveryPoint[];
+  inventoryMap?: Map<string, ApiProduct[]>;
+  vehicles?: ApiVehicle[];
 }
 
-export function MapWidget({ orders = [] }: MapWidgetProps) {
+export function MapWidget({ orders = [], deliveryPoints = [], inventoryMap, vehicles = [] }: MapWidgetProps) {
   const inTransitOrders = orders.filter(o => o.status === 'In Transit');
+  const [geoMap, setGeoMap] = useState<Record<string, [number, number]>>({});
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchCoords() {
+      const currentMap = { ...geoMap };
+      let updated = false;
+
+      // Extract all unique addresses explicitly
+      const addressesToFetch = new Set<string>();
+      deliveryPoints.forEach(dp => dp.address && addressesToFetch.add(dp.address));
+      vehicles.forEach(v => v.address && addressesToFetch.add(v.address));
+
+      // Loop over points sequentially to respect OSM's 1 req/sec limit
+      for (const address of Array.from(addressesToFetch)) {
+        if (!active) break;
+        if (!address) continue;
+        
+        // Skip if already definitively cached locally or explicitly known
+        if (currentMap[address] || KNOWN_COORDS[address]) continue;
+
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address + ', Львів')}`);
+          const data = await res.json();
+          if (active && data && data.length > 0) {
+            currentMap[address] = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            updated = true;
+          } else if (active) {
+            currentMap[address] = [0, 0]; // Mark resolved but strictly not found globally
+            updated = true;
+          }
+        } catch {
+          if (active) {
+            currentMap[address] = [0, 0];
+            updated = true;
+          }
+        }
+
+        if (updated && active) {
+          setGeoMap({ ...currentMap });
+        }
+        
+        if (active) await new Promise(resolve => setTimeout(resolve, 800));
+      }
+    }
+
+    if (deliveryPoints.length > 0) {
+      fetchCoords();
+    }
+
+    return () => { active = false; };
+  }, [deliveryPoints, vehicles]);
 
   // Build route data for each in-transit order
   const routes = inTransitOrders.map(order => {
@@ -156,7 +285,7 @@ export function MapWidget({ orders = [] }: MapWidgetProps) {
     }}>
       <MapContainer
         center={LVIV}
-        zoom={7}
+        zoom={12}
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%' }}
       >
@@ -174,6 +303,59 @@ export function MapWidget({ orders = [] }: MapWidgetProps) {
             <strong>Lviv Hub</strong><br />Central Logistics Command.
           </Popup>
         </Marker>
+
+        {/* Delivery Points markers */}
+        {deliveryPoints.map((dp) => (
+          <Marker key={dp.id} position={getDeliveryPointCoords(dp, geoMap)} icon={getPointIcon(dp.type)}>
+            <Tooltip direction="top" offset={[0, -16]} opacity={1} className="glass-tooltip">
+              <div style={{ minWidth: '180px' }}>
+                <div className="glass-tooltip-title">{dp.name}</div>
+                <span className="glass-tooltip-type">{dp.type.replace('_', ' ')}</span>
+                
+                {inventoryMap?.get(dp.id)?.length ? (
+                  <>
+                    <div className="glass-tooltip-divider" />
+                    <ul className="glass-tooltip-list">
+                      {inventoryMap.get(dp.id)!.slice(0, 5).map(p => (
+                        <li key={p.id}>
+                          {p.name} <span>({(p.weight / 1000).toFixed(1)} kg)</span>
+                        </li>
+                      ))}
+                      {inventoryMap.get(dp.id)!.length > 5 && (
+                        <li>+ {inventoryMap.get(dp.id)!.length - 5} items hidden</li>
+                      )}
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <div className="glass-tooltip-divider" />
+                    <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center' }}>No inventory logged</div>
+                  </>
+                )}
+              </div>
+            </Tooltip>
+          </Marker>
+        ))}
+
+        {/* Vehicles Markers */}
+        {vehicles.map((v) => (
+          <Marker key={v.id} position={getAddressCoords(v.address, v.id, geoMap)} icon={getPointIcon('vehicle')}>
+            <Tooltip direction="top" offset={[0, -16]} opacity={1} className="glass-tooltip">
+              <div style={{ minWidth: '160px' }}>
+                <div className="glass-tooltip-title">{v.name}</div>
+                <span className="glass-tooltip-type">Delivery Vehicle</span>
+                <div className="glass-tooltip-divider" />
+                <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                  <b>Fuel:</b> <span style={{ textTransform: 'capitalize' }}>{v.fuel_type}</span><br />
+                  <b>Limit:</b> {(v.max_weight / 1000).toFixed(1)} kg<br />
+                  <span style={{ color: '#94a3b8', fontSize: '11px' }}>
+                    Vol: {(v.max_length/100 * v.max_width/100 * v.max_height/100).toFixed(1)} m³
+                  </span>
+                </div>
+              </div>
+            </Tooltip>
+          </Marker>
+        ))}
 
         {/* In-Transit routes */}
         {routes.map(({ order, waypoints, truckIdx }) => (
