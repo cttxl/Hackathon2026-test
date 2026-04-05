@@ -44,7 +44,6 @@ func registerCRUD(r chi.Router, path string, mockData map[string]any) {
 	})
 }
 
-// RegisterHardcodedHandlers registers all mock endpoints according to API_DOCUMENTATION.md.
 func RegisterHardcodedHandlers(r chi.Router) {
 	r.Post("/login", func(w http.ResponseWriter, req *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{

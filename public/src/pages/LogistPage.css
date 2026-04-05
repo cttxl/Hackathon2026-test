@@ -5,7 +5,7 @@
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
-  overflow-y: auto; /* allow the whole split layout to scroll down to requests */
+  overflow-y: auto;
   padding: 20px;
 }
 
@@ -13,7 +13,6 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 20px;
-  /* Top row height: leave space for bottom panel to peek through */
   height: calc(100vh - 250px); 
   min-height: 400px;
   flex-shrink: 0;
@@ -39,7 +38,6 @@
   min-height: 0;
 }
 
-/* ── Map Enhancements ────────────────────────────────────────────────────── */
 
 .pulse-truck {
   animation: pulse-truck-anim 2s infinite ease-in-out;
@@ -147,7 +145,7 @@
   padding-top: 14px;
 }
 
-/* Order Item Card Styling */
+
 .order-card {
   display: flex;
   justify-content: space-between;
@@ -183,14 +181,14 @@
   color: #94a3b8;
 }
 
-/* Status colors border logic */
+
 .status-pending { border-left-color: #94a3b8; }
 .status-accepted { border-left-color: #3b82f6; }
 .status-intransit { border-left-color: #a855f7; }
 .status-delivered { border-left-color: #22c55e; }
 .status-canceled { border-left-color: #ef4444; }
 
-/* Status Text Labels */
+
 .status-badge {
   display: inline-block;
   padding: 4px 8px;
@@ -208,7 +206,7 @@
 .badge-delivered { background: rgba(34, 197, 94, 0.2); color: #86efac; }
 .badge-canceled { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 
-/* Grouping Styles */
+
 .request-group {
   margin-bottom: 32px;
   display: flex;
@@ -244,7 +242,7 @@
   gap: 16px;
 }
 
-/* Sortable List Background */
+
 .sortable-list-bg {
   padding: 16px;
   border-radius: 12px;
@@ -319,9 +317,9 @@
   transform: translateX(4px);
 }
 
-/* Emergency Requests Highlighting */
+
 .order-card-high {
-  border-left-color: #f59e0b !important; /* Yellow */
+  border-left-color: #f59e0b !important;
   background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 1) 100%) !important;
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.08);
   position: relative;
@@ -340,7 +338,7 @@
 }
 
 .order-card-critical {
-  border-left-color: #ef4444 !important; /* Red */
+  border-left-color: #ef4444 !important;
   background: linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, rgba(15, 23, 42, 1) 100%) !important;
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.12);
   position: relative;
@@ -384,7 +382,7 @@
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────────── */
+
 @media (max-width: 1024px) {
   .logist-split-layout {
     overflow-y: auto;

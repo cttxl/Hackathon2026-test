@@ -34,7 +34,6 @@ export function RequestList({
   const prodMap = new Map(products.map(p => [p.id, p.name]));
   const dpMap = new Map(deliveryPoints.map(dp => [dp.id, dp.name]));
 
-  // 0. Sort requests by emergency rank
   const emergencyOrder: Record<string, number> = { critical: 0, high: 1, default: 2 };
   const sortedRequests = [...(requests || [])].sort((a, b) => {
     const rankA = emergencyOrder[a.emergency] ?? 2;
@@ -42,13 +41,11 @@ export function RequestList({
     return rankA - rankB;
   });
 
-  // 1. Map request_id -> arrival_id using actual mapping table
   const requestToArrival = new Map<string, string>();
   (arrivalRequests || []).forEach(ar => {
     requestToArrival.set(ar.request_id, ar.arrival_id);
   });
 
-  // 2. Group requests by arrival_id
   const groups: Record<string, ApiRequest[]> = {};
   sortedRequests.forEach(req => {
     const aid = requestToArrival.get(req.id) ?? 'unassigned';

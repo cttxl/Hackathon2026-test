@@ -27,7 +27,6 @@ export function ProductsModal({ arrivalId, isOpen, onClose }: ProductsModalProps
 
     (async () => {
       try {
-        // 1. Get all arrival-requests linked to this arrival
         const arResp = await getArrivalRequests(arrivalId);
         const arrivalRequests = arResp.data;
 
@@ -37,7 +36,6 @@ export function ProductsModal({ arrivalId, isOpen, onClose }: ProductsModalProps
           return;
         }
 
-        // 2. For each arrival-request, fetch the base request to get product_id + quantity
         const entries = await Promise.all(
           arrivalRequests.map(async (ar) => {
             try {
@@ -86,7 +84,6 @@ export function ProductsModal({ arrivalId, isOpen, onClose }: ProductsModalProps
 
         {!loading && products.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '50vh', overflowY: 'auto' }}>
-            {/* Header row */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr auto',

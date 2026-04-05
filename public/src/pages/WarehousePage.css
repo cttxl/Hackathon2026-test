@@ -34,7 +34,6 @@
   background: transparent;
   border: none;
   color: #2dd4bf;
-  /* Teal accent */
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -69,12 +68,10 @@
 
 .inventory-panel {
   border-left: 4px solid #0d9488;
-  /* Teal border */
 }
 
 .operations-panel {
   border-left: 4px solid #0891b2;
-  /* Cyan border */
 }
 
 .panel-header {
@@ -99,7 +96,7 @@
   padding-right: 8px;
 }
 
-/* Custom scrollbar for warehouse panels */
+
 .scrollable-content::-webkit-scrollbar {
   width: 5px;
 }
@@ -240,7 +237,7 @@
   color: #67e8f9;
 }
 
-/* Critical Pulse Animation */
+
 @keyframes criticalPulse {
   0% {
     box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4);
@@ -262,7 +259,7 @@
   color: #fca5a5 !important;
 }
 
-/* Pagination Styles */
+
 .pagination-controls {
   display: flex;
   justify-content: space-between;
@@ -308,7 +305,7 @@
   color: #2dd4bf;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────────── */
+
 @media (max-width: 1024px) {
   .warehouse-split-layout {
     grid-template-columns: 1fr;

@@ -7,7 +7,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     proxy: {
-      // Proxy API calls to the Go backend during local dev
       '/login': 'http://localhost:8080',
       '/employees': 'http://localhost:8080',
       '/clients': 'http://localhost:8080',

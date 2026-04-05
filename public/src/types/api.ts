@@ -1,8 +1,3 @@
-// =====================================================
-// API Type Definitions — matches the API documentation
-// =====================================================
-
-// --- Auth ---
 export interface ApiLoginRequest {
   email: string;
   password: string;
@@ -17,7 +12,7 @@ export interface ApiLoginResponse {
   };
 }
 
-// --- Employees ---
+
 export type ApiEmployeeRole = 'admin' | 'logistician' | 'driver' | 'warehouse_manager';
 
 export interface ApiEmployee {
@@ -44,7 +39,6 @@ export interface ApiUpdateEmployeeRequest {
   password?: string;
 }
 
-// Custom UI Type for Frontend Context to replace mockEmployee
 export interface UIEmployee {
   id: string;
   fullName: string;
@@ -54,7 +48,7 @@ export interface UIEmployee {
 }
 
 
-// --- Vehicles ---
+
 export type FuelType = 'diesel' | 'gasoline' | 'electric';
 
 export interface ApiVehicle {
@@ -69,7 +63,7 @@ export interface ApiVehicle {
   address: string;
 }
 
-// --- Delivery Points ---
+
 export type DeliveryPointType = 'warehouse' | 'client_point' | 'provider';
 
 export interface ApiDeliveryPoint {
@@ -83,7 +77,7 @@ export interface ApiDeliveryPoint {
   length: number;
 }
 
-// --- Products ---
+
 export interface ApiProduct {
   id: string;
   name: string;
@@ -93,14 +87,14 @@ export interface ApiProduct {
   length: number;
 }
 
-// --- SKU (Stock Keeping Units) ---
+
 export interface ApiSku {
   id: string;
   product_id: string;
   delivery_point_id: string;
 }
 
-// --- Requests (Orders) ---
+
 export type RequestStatus = 'pending' | 'accepted' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface ApiRequest {
@@ -113,14 +107,14 @@ export interface ApiRequest {
   emergency: 'default' | 'high' | 'critical';
 }
 
-// --- Arrivals ---
+
 export type ArrivalStatus = 'pending' | 'accepted' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface ApiArrival {
   id: string;
   transport_id: string;
   driver_id: string;
-  time_to_arrival: string; // ISO datetime string
+  time_to_arrival: string;
   status: ArrivalStatus;
 }
 
@@ -137,7 +131,7 @@ export interface ApiUpdateArrivalRequest {
   status?: ArrivalStatus;
 }
 
-// --- Arrival Requests (Dispatch mappings) ---
+
 export interface ApiArrivalRequest {
   id: string;
   arrival_id: string;
@@ -149,7 +143,7 @@ export interface ApiCreateArrivalRequestEntry {
   request_id: string;
 }
 
-// --- Paginated response wrapper ---
+
 export interface ApiListResponse<T> {
   data: T[];
   meta: {
@@ -163,7 +157,6 @@ export interface ApiErrorResponse {
   error: string;
 }
 
-// ── UI Types for Frontend Context ─────────────────────────────────────────────
 
 export type OrderStatus = 'Pending' | 'Accepted' | 'In Transit' | 'Delivered' | 'Canceled';
 
@@ -177,7 +170,6 @@ export interface Order {
   status: OrderStatus;
   destination?: string;
   linkedRequests?: ApiRequest[];
-  /** Raw API arrival for edit/patch operations */
   _raw?: ApiArrival;
 }
 

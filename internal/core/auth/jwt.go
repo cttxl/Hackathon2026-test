@@ -17,8 +17,8 @@ func Init(secret string, expHours int) {
 
 type Claims struct {
 	ID   string `json:"id"`
-	Type string `json:"type"` // "employee" or "client"
-	Role string `json:"role"` // "driver", "logistician", "warehouse_manager", "" (for clients)
+	Type string `json:"type"`
+	Role string `json:"role"`
 	jwt.RegisteredClaims
 }
 

@@ -22,7 +22,6 @@ export const InventoryList: React.FC<InventoryListProps> = ({
   const [products, setProducts] = useState<Record<string, ApiProduct>>({});
 
   useEffect(() => {
-    // Fetch product details for new SKUs
     const fetchNewProducts = async () => {
       const uniqueProductIds = Array.from(new Set((skus || []).map((s) => s.product_id)));
       const missingIds = uniqueProductIds.filter((id) => !products[id]);
@@ -92,7 +91,6 @@ export const InventoryList: React.FC<InventoryListProps> = ({
         )}
       </div>
 
-      {/* Pagination Controls */}
       {totalItems > pageSize && (
         <div className="pagination-controls">
           <button

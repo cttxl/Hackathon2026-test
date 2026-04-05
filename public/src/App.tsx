@@ -8,7 +8,6 @@ import { WarehousePage } from './pages/WarehousePage';
 import { TestApiPage } from './pages/TestApiPage';
 import './index.css';
 
-// ── Role-based route guard ────────────────────────────────────────────────────
 function ProtectedRoute({ roles, children }: { roles: string[]; children: ReactNode }) {
   const raw = localStorage.getItem('currentUser');
   const user = raw
@@ -22,7 +21,6 @@ function ProtectedRoute({ roles, children }: { roles: string[]; children: ReactN
   return <>{children}</>;
 }
 
-// ── App shell ─────────────────────────────────────────────────────────────────
 function AppInner() {
   const containerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -44,7 +42,6 @@ function AppInner() {
       ref={containerRef}
       onMouseMove={handleMouseMove}
     >
-      {/* Brand bar only shown on the login page */}
       {isLoginPage && (
         <header className="brand-header">
           <h1 className="brand-title">LogicFlow</h1>

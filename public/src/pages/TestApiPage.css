@@ -4,7 +4,7 @@
   box-sizing: border-box;
   background: radial-gradient(circle at top left, #1a1f3c, #0b0f19);
   color: #f8fafc;
-  overflow-y: auto; /* Enable vertical scrolling for the whole page */
+  overflow-y: auto;
 }
 
 .api-layout {
@@ -15,7 +15,7 @@
   align-items: start;
 }
 
-/* Glass Panels */
+
 .api-menu-panel, .api-content-panel {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
@@ -28,7 +28,7 @@
 
 .api-menu-panel {
   position: sticky;
-  top: 30px; /* Keep sidebar visible while scrolling */
+  top: 30px;
 }
 
 .api-menu-panel h3, .api-content-panel h3 {
@@ -48,7 +48,7 @@
   letter-spacing: 0;
 }
 
-/* Sidebar Menu */
+
 .api-menu-list {
   display: flex;
   flex-direction: column;
@@ -81,7 +81,7 @@
   font-weight: 600;
 }
 
-/* Content Layout */
+
 .api-content-layout {
   display: flex;
   flex-direction: column;
@@ -94,7 +94,7 @@
   font-weight: 700;
 }
 
-/* JSON Viewer */
+
 pre.api-json-viewer {
   background: rgba(0, 0, 0, 0.4);
   padding: 20px;
@@ -109,7 +109,7 @@ pre.api-json-viewer {
   margin-top: 10px;
 }
 
-/* Form Styles */
+
 .api-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -150,7 +150,7 @@ pre.api-json-viewer {
   justify-content: flex-end;
 }
 
-/* Sidebar Identity */
+
 .sidebar-identity {
   padding: 16px;
   background: rgba(0, 0, 0, 0.2);
@@ -159,7 +159,7 @@ pre.api-json-viewer {
   margin-bottom: 24px;
 }
 
-/* Responsive */
+
 @media (max-width: 1024px) {
   .api-layout {
     grid-template-columns: 1fr;

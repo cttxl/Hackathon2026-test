@@ -4,7 +4,7 @@ import { useEffect, useRef, Fragment } from 'react';
 import L from 'leaflet';
 import type { Order, ApiDeliveryPoint, ApiProduct, ApiVehicle } from '../../types/api';
 
-// ── Fix default icon paths ─────────────────────────────────────────────────
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -12,7 +12,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// ── Custom SVG icons ───────────────────────────────────────────────────────
+
 const hubIcon = L.divIcon({
   className: '',
   html: `<div style="
@@ -109,7 +109,7 @@ function getPointIcon(type: string, isSmall = false, isDelivered = false) {
   });
 }
 
-// ── Known location coordinates ─────────────────────────────────────────────
+
 const KNOWN_COORDS: Record<string, [number, number]> = {
   'Central Hub Lviv': [49.8397, 24.0297],
   'Kyiv North Node': [50.4501, 30.5234],
@@ -118,7 +118,6 @@ const KNOWN_COORDS: Record<string, [number, number]> = {
   'Warsaw Relay Point': [52.2297, 21.0122],
   'Lviv Hub': [49.8397, 24.0297],
   
-  // Addresses
   'вул. Тестова, 1, Львів': [49.8350, 24.0300],
   'вул. Шевченка, 317, Львів': [49.8524, 23.9613],
   'вул. Городоцька, 355, Львів': [49.8188, 23.9472],
@@ -126,7 +125,6 @@ const KNOWN_COORDS: Record<string, [number, number]> = {
   'вул. Джорджа Вашингтона, 8': [49.8213, 24.0673],
   'вул. Стрийська, 45': [49.8055, 24.0182],
 
-  // Names (Fallback for warehouses)
   'Склад Рясне-Пром': [49.8524, 23.9613],
   'Логістичний центр Захід': [49.8188, 23.9472],
   'Склад Сихів-Термінал': [49.8143, 24.0534],
@@ -154,7 +152,6 @@ function getDeliveryPointCoords(dp: ApiDeliveryPoint): [number, number] {
   return getAddressCoords(dp.address, dp.id || dp.name || 'fallback');
 }
 
-/** Generate realistic intermediate waypoints between two coordinates */
 function buildWaypoints(
   from: [number, number],
   to: [number, number],
@@ -177,7 +174,6 @@ function buildWaypoints(
   return points;
 }
 
-// ── Fit-bounds helper component ─────────────────────────────────────────────
 function FitEverything({ routes, points }: { routes: [number, number][][], points: [number, number][] }) {
   const map = useMap();
   const fitted = useRef(false);
@@ -202,15 +198,15 @@ function FitEverything({ routes, points }: { routes: [number, number][][], point
   return null;
 }
 
-// ── MapWidget ──────────────────────────────────────────────────────────────
+
 interface MapWidgetProps {
   orders?: Order[];
   deliveryPoints?: ApiDeliveryPoint[];
   inventoryMap?: Map<string, ApiProduct[]>;
   vehicles?: ApiVehicle[];
-  statusFilter?: string[]; // New: allow custom status filtering
-  hideStaticVehicles?: boolean; // New: hide all-fleet markers
-  deliveredPointIds?: string[]; // New: highlight delivered points
+  statusFilter?: string[];
+  hideStaticVehicles?: boolean;
+  deliveredPointIds?: string[];
 }
 
 export function MapWidget({ 
@@ -218,7 +214,7 @@ export function MapWidget({
   deliveryPoints = [], 
   inventoryMap, 
   vehicles = [],
-  statusFilter = ['In Transit'], // Default to what Logist needs
+  statusFilter = ['In Transit'],
   hideStaticVehicles = false,
   deliveredPointIds = []
 }: MapWidgetProps) {
@@ -234,7 +230,7 @@ export function MapWidget({
     return {
       order,
       waypoints: buildWaypoints(fromCoords, toCoords, order.id),
-      truckIdx: (idx % 3) + 1, // Stay on intermediate waypoints (1-3)
+      truckIdx: (idx % 3) + 1,
     };
   });
 
@@ -265,7 +261,6 @@ export function MapWidget({
           points={hideStaticVehicles ? [] : [...dpCoords, ...staticVehicles.map(v => getAddressCoords(v.address, v.id, true))]} 
         />
 
-        {/* Delivery Points markers */}
         {deliveryPoints.map((dp) => {
           const isDelivered = deliveredPointIds.includes(dp.id);
           return (
@@ -317,7 +312,6 @@ export function MapWidget({
           );
         })}
 
-        {/* Vehicles Markers (All fleet, small) */}
         {!hideStaticVehicles && vehicles.map((v) => (
           <Marker 
             key={v.id} 
@@ -342,10 +336,8 @@ export function MapWidget({
           </Marker>
         ))}
 
-        {/* In-Transit routes */}
         {routes.map(({ order, waypoints, truckIdx }) => (
           <Fragment key={order.id}>
-            {/* Origin marker */}
             <Marker position={waypoints[0]} icon={hubIcon}>
               <Popup>
                 <strong>Origin</strong><br />
@@ -355,7 +347,6 @@ export function MapWidget({
             </Marker>
 
 
-            {/* Truck position marker (at 60% of route) */}
             <Marker position={waypoints[truckIdx]} icon={truckIcon}>
               <Popup>
                 <strong>🚛 In Transit</strong><br />
@@ -365,7 +356,6 @@ export function MapWidget({
               </Popup>
             </Marker>
 
-            {/* Destination marker */}
             <Marker position={waypoints[waypoints.length - 1]} icon={destIcon}>
               <Popup>
                 <strong>Destination</strong><br />

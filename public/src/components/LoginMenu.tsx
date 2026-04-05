@@ -4,7 +4,7 @@ import { loginApi } from '../services/api';
 
 import './LoginMenu.css';
 
-/** Map API role string → frontend route */
+
 function roleToRoute(role: string): string {
   switch (role) {
     case 'admin': return '/admin';
@@ -28,13 +28,12 @@ export function LoginMenu() {
     setLoading(true);
 
     try {
-      // ── Real API ──────────────────────────────────────────────────────────
       const res = await loginApi(email, password);
 
       localStorage.setItem('authToken', res.token);
       localStorage.setItem('currentUser', JSON.stringify({
         id: res.user.id,
-        fullName: email.split('@')[0],  // placeholder until /me endpoint available
+        fullName: email.split('@')[0],
         email,
         phone: '',
         role: res.user.role,

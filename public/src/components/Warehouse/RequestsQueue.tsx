@@ -37,7 +37,6 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Fetch requests whenever the warehouse changes ──────────────────────────
   const fetchRequests = useCallback(async () => {
     if (!selectedWarehouseId) return;
     setLoading(true);
@@ -78,7 +77,6 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
     onShipRequest(id);
   };
 
-  // ── Filtered list ──────────────────────────────────────────────────────────
   const filtered = filterStatus === 'all'
     ? requests
     : requests.filter((r) => r.status === filterStatus);
@@ -88,7 +86,6 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
     return acc;
   }, {});
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="operations-panel">
       {/* Header */}
@@ -99,7 +96,6 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
         </span>
       </div>
 
-      {/* Status filter */}
       <div style={{ marginBottom: '12px', flexShrink: 0 }}>
         <div style={{
           display: 'flex',
@@ -153,7 +149,6 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
         </div>
       </div>
 
-      {/* Scrollable card list */}
       <div className="scrollable-content">
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
@@ -181,7 +176,6 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
 
             return (
               <div key={req.id} className="operation-card" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', padding: '20px' }}>
-                {/* Left side: Info and Badges */}
                 <div className="op-info" style={{ flex: 1, alignItems: 'flex-start' }}>
                   <span className="op-main">
                     {product?.name ?? `Product ${req.product_id.slice(-8)}`}
@@ -234,7 +228,6 @@ export const RequestsQueue: React.FC<RequestsQueueProps> = ({
                   </div>
                 </div>
 
-                {/* Right side: Action Button */}
                 {canShip && (
                   <button
                     className="btn-action-teal"

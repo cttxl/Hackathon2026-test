@@ -59,7 +59,6 @@ export function OrderList({ orders, onEditClick, onProductsClick }: OrderListPro
               </div>
             </div>
 
-            {/* Action buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
               <button
                 className="btn-edit"

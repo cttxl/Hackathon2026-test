@@ -10,23 +10,12 @@ import (
 	"github.com/cttxl/Hackathon2026-test/internal/core/domain"
 )
 
-// ──────────────────────────────────────────────────────────────────────────────
-// GetRecommended distributes pending requests across pending arrivals.
-//
-// New Algorithm (Requested by user):
-//  1. Load all pending requests.
-//  2. Load all pending arrivals (sorted by time).
-//  3. Sort requests by urgency: critical (0) > high (1) > default (2).
-//  4. For each request, pick arrival sequentially (i % len(arrivals)).
-// ──────────────────────────────────────────────────────────────────────────────
 func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, error) {
-	// 1. Fetch all pending requests
 	requests, err := fetchPendingRequests(ctx, db)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Fetch all pending arrivals (already sorted by a.time_to_arrival ASC)
 	arrivals, err := fetchPendingArrivals(ctx, db)
 	if err != nil {
 		return nil, err
@@ -36,17 +25,14 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 		return []domain.ArrivalRequest{}, nil
 	}
 
-	// 3. Sort requests by urgency rank
 	sort.Slice(requests, func(i, j int) bool {
 		return emergencyRank(requests[i].emergency) < emergencyRank(requests[j].emergency)
 	})
 
-	// 4. For each request, pick arrival sequentially
 	now := time.Now()
 	out := make([]domain.ArrivalRequest, 0, len(requests))
 
 	for i, req := range requests {
-		// Pick arrival sequentially based on urgency
 		arrIdx := i % len(arrivals)
 		
 		out = append(out, domain.ArrivalRequest{
@@ -71,10 +57,6 @@ func emergencyRank(e string) int {
 	}
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Internal data types
-// ──────────────────────────────────────────────────────────────────────────────
-
 type pendingRequest struct {
 	requestID string
 	productID string
@@ -83,7 +65,7 @@ type pendingRequest struct {
 	createdAt time.Time
 
 	pWeight, pHeight, pWidth, pLength int
-	dpAddress                         string // delivery point address (destination)
+	dpAddress                         string
 }
 
 type pendingArrival struct {
@@ -91,15 +73,11 @@ type pendingArrival struct {
 
 	maxWeight, maxHeight, maxWidth, maxLength int
 	fuelConsumption                           int
-	vehicleAddress                            string // vehicle starting address (point A)
+	vehicleAddress                            string
 
 	remainWeight int
 	remainVol    int
 }
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Database queries
-// ──────────────────────────────────────────────────────────────────────────────
 
 func fetchPendingRequests(ctx context.Context, db *sql.DB) ([]pendingRequest, error) {
 	const query = `

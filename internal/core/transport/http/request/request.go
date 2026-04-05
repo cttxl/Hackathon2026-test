@@ -5,7 +5,6 @@ import (
 	"net/http"
 )
 
-// Pagination extracts pagination params from query
 func Pagination(r *http.Request) (int, int) {
 	page := 1
 	limit := 10

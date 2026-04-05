@@ -17,7 +17,6 @@ export function Header({ title, children }: HeaderProps) {
     if (userStr) {
       setCurrentUser(JSON.parse(userStr));
     } else {
-      // If no valid auth session, kick them out
       navigate('/');
     }
   }, [navigate]);
@@ -35,7 +34,7 @@ export function Header({ title, children }: HeaderProps) {
         <h2 className="header-title">{title}</h2>
 
         <div className="header-right">
-          {children} {/* Allows injection of buttons like "Hire new worker" */}
+          {children}
 
           <div className="user-label">{currentUser.fullName}</div>
 

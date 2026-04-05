@@ -3,7 +3,7 @@
 :root {
   --mouse-x: 50%;
   --mouse-y: 50%;
-  --header-height: 72px; /* Brand logo bar height */
+  --header-height: 72px;
 }
 
 *, *::before, *::after {
@@ -21,7 +21,7 @@ html, body, #root {
   color: #f1f5f9;
 }
 
-/* Root app wrapper — tracks the cursor glow and hosts all routes */
+
 .app-container {
   height: 100%;
   width: 100%;
@@ -41,7 +41,7 @@ html, body, #root {
     );
 }
 
-/* Brand bar — only visible on the login page */
+
 .brand-header {
   width: 100%;
   height: var(--header-height);
@@ -62,7 +62,7 @@ html, body, #root {
   background-clip: text;
 }
 
-/* Main area fills all remaining vertical space */
+
 .app-main {
   flex: 1 1 0;
   overflow: hidden; /* children manage their own scroll */
@@ -70,7 +70,7 @@ html, body, #root {
   width: 100%;
 }
 
-/* Login-specific centering wrapper */
+
 .login-route-wrapper {
   display: flex;
   flex-direction: column;
@@ -80,7 +80,7 @@ html, body, #root {
   overflow: auto;
 }
 
-/* Custom Map Tooltips */
+
 .leaflet-tooltip.glass-tooltip {
   background: rgba(22, 26, 35, 0.85) !important;
   backdrop-filter: blur(12px) !important;
@@ -132,7 +132,7 @@ html, body, #root {
   margin-left: 4px;
 }
 
-/* ── Responsive global overrides ─────────────────────────────────────────── */
+
 @media (max-width: 768px) {
   html, body, #root {
     overflow: auto;  /* allow page-level scroll on mobile */
@@ -147,7 +147,6 @@ html, body, #root {
   }
 
   .app-container {
-    /* disable the mouse-glow on touch devices */
     background: radial-gradient(
       600px circle at 50% 20%,
       rgba(56, 189, 248, 0.10),

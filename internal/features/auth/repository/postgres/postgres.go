@@ -17,8 +17,6 @@ func NewAuthRepository(db *sql.DB) *AuthRepository {
 	return &AuthRepository{Repository: postgres.NewRepository(db)}
 }
 
-// Authenticate checks if a user with the given email and password exists in employees or clients.
-// It returns a generic domain.LoginUser containing ID, Type, and Role.
 func (r *AuthRepository) Authenticate(ctx context.Context, email, password string) (*domain.LoginUser, error) {
 	query := `
 		SELECT id, 'employee' as type, role, password_hash
@@ -34,13 +32,13 @@ func (r *AuthRepository) Authenticate(ctx context.Context, email, password strin
 	err := r.DB().QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Type, &user.Role, &hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil // Invalid credentials
+			return nil, nil
 		}
 		return nil, err
 	}
 
 	if !auth.CheckPasswordHash(password, hash) {
-		return nil, nil // Invalid credentials
+		return nil, nil
 	}
 
 	return &user, nil

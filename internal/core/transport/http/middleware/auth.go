@@ -13,10 +13,8 @@ type contextKey string
 
 const ClaimsContextKey = contextKey("jwt_claims")
 
-// AuthMiddleware intercepts requests, validates the JWT, and adds the claims to the context
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract token from Auth header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			response.Error(w, http.StatusUnauthorized, "Missing Authorization header")
@@ -36,13 +34,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Inject claims into context
 		ctx := context.WithValue(r.Context(), ClaimsContextKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-// GetClaims is a helper string to retrieve claims from context inside handlers
 func GetClaims(ctx context.Context) *auth.Claims {
 	claims, ok := ctx.Value(ClaimsContextKey).(*auth.Claims)
 	if !ok {
@@ -51,7 +47,6 @@ func GetClaims(ctx context.Context) *auth.Claims {
 	return claims
 }
 
-// AdminOnly intercepts requests and validates that the authenticated user is an admin
 func AdminOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := GetClaims(r.Context())

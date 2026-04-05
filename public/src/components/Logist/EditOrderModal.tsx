@@ -7,7 +7,7 @@ interface EditOrderModalProps {
   order?: Order | null;
   isOpen: boolean;
   vehicles: ApiVehicle[];
-  employees: ApiEmployee[];   // driver employees only
+  employees: ApiEmployee[];
   onClose: () => void;
   onSave: (order: Order) => void;
 }
@@ -64,7 +64,6 @@ export function EditOrderModal({
 
         <form onSubmit={handleSubmit} className="login-form">
 
-          {/* Vehicle selector — live from API */}
           <div className="input-group">
             <label>Transport / Vehicle</label>
             {vehicles.length > 0 ? (
@@ -97,7 +96,6 @@ export function EditOrderModal({
             )}
           </div>
 
-          {/* Driver selector — live from API */}
           <div className="input-group">
             <label>Driver</label>
             {employees.length > 0 ? (
@@ -130,7 +128,6 @@ export function EditOrderModal({
             )}
           </div>
 
-          {/* Time of arrival */}
           <div className="input-group">
             <label>Time of Arrival</label>
             <input
@@ -141,7 +138,6 @@ export function EditOrderModal({
             />
           </div>
 
-          {/* Status */}
           <div className="input-group">
             <label>Status</label>
             <select

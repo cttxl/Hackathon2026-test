@@ -88,7 +88,7 @@ func main() {
 		dpHandler := dpHttp.NewDeliveryPointHandler(dpRepo.NewDeliveryPointRepository(db))
 		dpHandler.RegisterRoutes(r)
 
-		// Dedicated Client API
+
 		r.Route("/api/v1/client", func(r chi.Router) {
 			requestHandler.RegisterClientRoutes(r)
 			dpHandler.RegisterClientRoutes(r)

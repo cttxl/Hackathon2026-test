@@ -214,8 +214,8 @@ def seed_arrivals(headers, vehicle_ids, driver_ids):
     arrival_count = 0
     if not vehicle_ids or not driver_ids:
         return
-    used_combos = set()  # (driver_id, transport_id, time_to_arrival)
-    max_retries = 20  # attempts per arrival before giving up
+    used_combos = set()
+    max_retries = 20
 
     for i in range(FAKEDATA_ARRIVALS_COUNT):
         generated = False
@@ -228,7 +228,7 @@ def seed_arrivals(headers, vehicle_ids, driver_ids):
             driver_id = random.choice(driver_ids)
             combo = (driver_id, transport_id, arrival_time)
             if combo in used_combos:
-                continue  # collision – pick again
+                continue
             used_combos.add(combo)
             payload = {
                 "transport_id": transport_id,
