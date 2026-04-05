@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Header } from '../components/Shared/Header';
-import { MapWidget } from '../components/Logist/MapWidget';
+import { MapWidget } from '../components/Shared/MapWidget';
 import { OrderList } from '../components/Logist/OrderList';
 import { EditOrderModal } from '../components/Logist/EditOrderModal';
 import { ProductsModal } from '../components/Logist/ProductsModal';
 import { RequestList } from '../components/Logist/RequestList';
+import { RebaseModal } from '../components/Logist/RebaseModal';
 import {
   getArrivals,
   createArrival,
@@ -16,9 +17,12 @@ import {
   getSkus,
   getRequests,
   getRecommendedArrivalRequests,
+  getAllArrivalRequests,
   createArrivalRequest,
+  deleteArrivalRequest,
+  patchRequest,
 } from '../services/api';
-import type { ApiArrival, ApiVehicle, ApiEmployee, ApiDeliveryPoint, ApiProduct, ApiRequest, Order, OrderStatus } from '../types/api';
+import type { ApiArrival, ApiVehicle, ApiEmployee, ApiDeliveryPoint, ApiProduct, ApiRequest, ApiArrivalRequest, Order, OrderStatus } from '../types/api';
 import './LogistPage.css';
 import './AdminPage.css';
 
@@ -72,6 +76,7 @@ export function LogistPage() {
   const [employees, setEmployees] = useState<ApiEmployee[]>([]);
   const [deliveryPoints, setDeliveryPoints] = useState<ApiDeliveryPoint[]>([]);
   const [requests, setRequests] = useState<ApiRequest[]>([]);
+  const [arrivalRequests, setArrivalRequests] = useState<ApiArrivalRequest[]>([]);
   const [allProducts, setAllProducts] = useState<ApiProduct[]>([]);
   const [inventoryMap, setInventoryMap] = useState<Map<string, ApiProduct[]>>(new Map());
 
@@ -81,6 +86,8 @@ export function LogistPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedArrivalId, setSelectedArrivalId] = useState<string | null>(null);
   const [productsArrivalId, setProductsArrivalId] = useState<string | null>(null);
+  const [rebaseRequestId, setRebaseRequestId] = useState<string | null>(null);
+  const [isRebaseModalOpen, setIsRebaseModalOpen] = useState(false);
 
   const vehicleMap = useMemo<Map<string, string>>(() => {
     const m = new Map<string, string>();
@@ -111,13 +118,14 @@ export function LogistPage() {
     setLoading(true);
     setApiError(null);
     try {
-      const [arrivalsRes, vehiclesRes, employeesRes, dpRes, prodRes, requestsRes] = await Promise.all([
+      const [arrivalsRes, vehiclesRes, employeesRes, dpRes, prodRes, requestsRes, mappingsRes] = await Promise.all([
         getArrivals(),
         getVehicles(1, 100),
         getEmployees(1, 200),
         getDeliveryPoints(),
         getProducts(),
         getRequests(),
+        getAllArrivalRequests(1, 1000),
       ]);
       
       const dps = dpRes?.data || [];
@@ -130,6 +138,7 @@ export function LogistPage() {
       setDeliveryPoints(dps);
       setAllProducts(prods);
       setRequests(requestsRes?.data || []);
+      setArrivalRequests(mappingsRes?.data || []);
       
       // Fetch SKUs asynchronously without blocking rendering
       Promise.all(
@@ -155,6 +164,7 @@ export function LogistPage() {
       setEmployees([]);
       setDeliveryPoints([]);
       setRequests([]);
+      setArrivalRequests([]);
       setInventoryMap(new Map());
     } finally {
       setLoading(false);
@@ -208,15 +218,18 @@ export function LogistPage() {
       const recommendedRes = await getRecommendedArrivalRequests();
       const recommended = recommendedRes?.data || [];
       
-      // We process them in parallel.
+      // 1. Create the dispatch mappings
       await Promise.all(recommended.map(async item => {
-        // 1. Create the dispatch mapping
         await createArrivalRequest({
           arrival_id: item.arrival_id,
-          request_id: item.request_id,
-          sku_ids: item.sku_ids || [],
-          priority: item.priority
+          request_id: item.request_id
         });
+      }));
+
+      // 2. Update ALL pending requests (to ensure 100% compliance)
+      const pendingRequests = requests.filter((r: ApiRequest) => r.status === 'pending');
+      await Promise.all(pendingRequests.map(async (req: ApiRequest) => {
+        await patchRequest(req.id, { status: 'accepted' });
       }));
       
       await loadData();
@@ -224,6 +237,62 @@ export function LogistPage() {
       setApiError(err instanceof Error ? err.message : 'Auto-sort failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+
+  const handleUnlink = async (requestId: string) => {
+    try {
+      setLoading(true);
+      // Find the mapping for this request
+      const mapping = arrivalRequests.find((ar: ApiArrivalRequest) => ar.request_id === requestId);
+      if (mapping) {
+        await deleteArrivalRequest(mapping.id);
+      }
+      
+      // Update status back to pending
+      await patchRequest(requestId, { status: 'pending' });
+      
+      await loadData();
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Unlink failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handleRebaseClick = (requestId: string) => {
+    setRebaseRequestId(requestId);
+    setIsRebaseModalOpen(true);
+  };
+
+  const handleRebaseSelect = async (arrivalId: string) => {
+    if (!rebaseRequestId) return;
+    try {
+      setLoading(true);
+      
+      // 1. Find and delete existing mapping if it exists
+      const existingMapping = arrivalRequests.find((ar: ApiArrivalRequest) => ar.request_id === rebaseRequestId);
+      if (existingMapping) {
+        await deleteArrivalRequest(existingMapping.id);
+      }
+
+      // 2. Create new mapping
+      await createArrivalRequest({
+        arrival_id: arrivalId,
+        request_id: rebaseRequestId
+      });
+
+      // 3. Ensure status is accepted
+      await patchRequest(rebaseRequestId, { status: 'accepted' });
+
+      await loadData();
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Rebase failed');
+    } finally {
+      setLoading(false);
+      setRebaseRequestId(null);
     }
   };
 
@@ -283,7 +352,12 @@ export function LogistPage() {
         <div className="logist-top-row">
           {/* Left — Map */}
           <div className="map-panel">
-            <MapWidget orders={orders} deliveryPoints={deliveryPoints} inventoryMap={inventoryMap} vehicles={vehicles} />
+            <MapWidget 
+              orders={orders} 
+              deliveryPoints={deliveryPoints} 
+              inventoryMap={inventoryMap} 
+              vehicles={vehicles}
+            />
           </div>
 
           {/* Right — Orders */}
@@ -333,6 +407,12 @@ export function LogistPage() {
             requests={requests} 
             products={allProducts} 
             deliveryPoints={deliveryPoints} 
+            arrivalRequests={arrivalRequests}
+            arrivals={arrivals}
+            vehicleMap={vehicleMap}
+            driverMap={driverMap}
+            onUnlink={handleUnlink}
+            onRebase={handleRebaseClick}
           />
         </div>
       </div>
@@ -350,6 +430,15 @@ export function LogistPage() {
         arrivalId={productsArrivalId}
         isOpen={productsArrivalId !== null}
         onClose={() => setProductsArrivalId(null)}
+      />
+
+      <RebaseModal
+        isOpen={isRebaseModalOpen}
+        onClose={() => setIsRebaseModalOpen(false)}
+        arrivals={arrivals}
+        vehicleMap={vehicleMap}
+        driverMap={driverMap}
+        onSelect={handleRebaseSelect}
       />
     </div>
   );

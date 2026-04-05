@@ -13,7 +13,9 @@ import os
 BASE_URL = os.getenv("API_URL", "http://backend:8080")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@admin.com")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1111")
-FAKEDATA_REQUESTS_COUNT = int(os.getenv("FAKEDATA_REQUESTS_COUNT", "100"))
+FAKEDATA_CRITICAL_REQUESTS_COUNT = int(os.getenv("FAKEDATA_CRITICAL_REQUESTS_COUNT", "50"))
+FAKEDATA_HIGH_REQUESTS_COUNT = int(os.getenv("FAKEDATA_HIGH_REQUESTS_COUNT", "50"))
+FAKEDATA_DEFAULT_REQUESTS_COUNT = int(os.getenv("FAKEDATA_DEFAULT_REQUESTS_COUNT", "50"))
 FAKEDATA_ARRIVALS_COUNT = int(os.getenv("FAKEDATA_ARRIVALS_COUNT", "10"))
 FAKEDATA_LOGISTICIAN_COUNT = int(os.getenv("FAKEDATA_LOGISTICIAN_COUNT", "5"))
 FAKEDATA_DRIVER_COUNT = int(os.getenv("FAKEDATA_DRIVER_COUNT", "20"))
@@ -164,19 +166,25 @@ def clear_before_seed(headers):
     print("Database cleared.")
 
 def seed_requests(headers, product_ids, point_ids):
-    emergency_levels = ["default", "high", "critical"]
     req_count = 0
-    for i in range(FAKEDATA_REQUESTS_COUNT):
-        payload = {
-            "product_id": random.choice(product_ids),
-            "delivery_point_id": random.choice(point_ids),
-            "quantity": random.randint(1, 5),
-            "emergency": emergency_levels[i % 3] 
-        }
-        res = requests.post(f"{BASE_URL}/requests", json=payload, headers=headers)
-        if res.status_code in (200, 201):
-            req_count += 1
-    print(f"Requests (Orders) generated: {req_count}.")
+    configs = [
+        ("critical", FAKEDATA_CRITICAL_REQUESTS_COUNT),
+        ("high", FAKEDATA_HIGH_REQUESTS_COUNT),
+        ("default", FAKEDATA_DEFAULT_REQUESTS_COUNT)
+    ]
+    
+    for level, count in configs:
+        for _ in range(count):
+            payload = {
+                "product_id": random.choice(product_ids),
+                "delivery_point_id": random.choice(point_ids),
+                "quantity": random.randint(1, 5),
+                "emergency": level
+            }
+            res = requests.post(f"{BASE_URL}/requests", json=payload, headers=headers)
+            if res.status_code in (200, 201):
+                req_count += 1
+    print(f"Total Requests generated: {req_count} (Critical: {FAKEDATA_CRITICAL_REQUESTS_COUNT}, High: {FAKEDATA_HIGH_REQUESTS_COUNT}, Default: {FAKEDATA_DEFAULT_REQUESTS_COUNT}).")
 
 def seed_arrivals(headers, vehicle_ids, driver_ids):
     arrival_count = 0

@@ -42,13 +42,6 @@ func (h *ArrivalRequestHandler) Create(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusBadRequest, "Missing arrival_id")
 		return
 	}
-	if input.Priority <= 0 {
-		response.Error(w, http.StatusBadRequest, "Missing priority")
-		return
-	}
-	if len(input.SkuIDs) == 0 {
-		input.SkuIDs = []string{}
-	}
 
 	ar, err := h.repo.Create(r.Context(), input)
 	if err != nil {

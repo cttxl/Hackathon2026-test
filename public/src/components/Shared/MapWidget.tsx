@@ -1,6 +1,6 @@
-import { useEffect, useRef, Fragment } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, Fragment } from 'react';
 import L from 'leaflet';
 import type { Order, ApiDeliveryPoint, ApiProduct, ApiVehicle } from '../../types/api';
 
@@ -27,22 +27,8 @@ const hubIcon = L.divIcon({
   popupAnchor: [0, -12],
 });
 
-const waypointIcon = L.divIcon({
-  className: '',
-  html: `<div style="
-    width:10px;height:10px;
-    background:#a855f7;
-    border-radius:50%;
-    border:1px solid rgba(255,255,255,0.3);
-    box-shadow:0 0 6px rgba(168,85,247,0.5);
-  "></div>`,
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
-  popupAnchor: [0, -8],
-});
-
 const truckIcon = L.divIcon({
-  className: '',
+  className: 'pulse-truck',
   html: `<div style="
     width:24px;height:24px;
     background:rgba(168,85,247,0.85);
@@ -71,7 +57,7 @@ const destIcon = L.divIcon({
   popupAnchor: [0, -12],
 });
 
-function getPointIcon(type: string, isSmall = false) {
+function getPointIcon(type: string, isSmall = false, isDelivered = false) {
   let emoji = '';
   let size = 16;
 
@@ -79,7 +65,7 @@ function getPointIcon(type: string, isSmall = false) {
     emoji = '🏠';
     size = 20;
   } else if (type === 'client_point') {
-    emoji = '📍';
+    emoji = isDelivered ? '✅' : '📍';
     size = 18;
   } else if (type === 'provider') {
     emoji = '🏭';
@@ -222,32 +208,38 @@ interface MapWidgetProps {
   deliveryPoints?: ApiDeliveryPoint[];
   inventoryMap?: Map<string, ApiProduct[]>;
   vehicles?: ApiVehicle[];
+  statusFilter?: string[]; // New: allow custom status filtering
+  hideStaticVehicles?: boolean; // New: hide all-fleet markers
+  deliveredPointIds?: string[]; // New: highlight delivered points
 }
 
-export function MapWidget({ orders = [], deliveryPoints = [], inventoryMap, vehicles = [] }: MapWidgetProps) {
-  const inTransitOrders = orders.filter(o => o.status === 'In Transit');
+export function MapWidget({ 
+  orders = [], 
+  deliveryPoints = [], 
+  inventoryMap, 
+  vehicles = [],
+  statusFilter = ['In Transit'], // Default to what Logist needs
+  hideStaticVehicles = false,
+  deliveredPointIds = []
+}: MapWidgetProps) {
+  const activeOrders = orders.filter(o => statusFilter.includes(o.status));
   
-  const routes = inTransitOrders.map((order, idx) => {
+  const routes = activeOrders.map((order, idx) => {
     const fromAddr = order.placeOfDeparture || 'Lviv Hub';
     const toAddrId = (order._raw as any)?.delivery_point_id || ''; 
-
-    // Find destination DP to get its real address
     const destDP = deliveryPoints.find(dp => dp.id === toAddrId);
-    
     const fromCoords = getAddressCoords(fromAddr, 'origin-' + order.id);
     const toCoords = destDP ? getDeliveryPointCoords(destDP) : getAddressCoords(toAddrId, 'dest-' + order.id);
 
     return {
       order,
       waypoints: buildWaypoints(fromCoords, toCoords, order.id),
-      truckIdx: idx % 10,
+      truckIdx: (idx % 3) + 1, // Stay on intermediate waypoints (1-3)
     };
   });
 
-  // Deduplicate: Don't show static markers for vehicles currently on active routes
-  const activeVehicleNames = new Set(inTransitOrders.map(o => o.transportName));
+  const activeVehicleNames = new Set(activeOrders.map(o => o.transportName));
   const staticVehicles = vehicles.filter(v => !activeVehicleNames.has(v.name));
-
   const allWaypoints = routes.map(r => r.waypoints);
   const dpCoords = deliveryPoints.map(dp => getDeliveryPointCoords(dp));
 
@@ -268,59 +260,65 @@ export function MapWidget({ orders = [], deliveryPoints = [], inventoryMap, vehi
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
-        <FitEverything routes={allWaypoints} points={[...dpCoords, ...staticVehicles.map(v => getAddressCoords(v.address, v.id, true))]} />
+        <FitEverything 
+          routes={allWaypoints} 
+          points={hideStaticVehicles ? [] : [...dpCoords, ...staticVehicles.map(v => getAddressCoords(v.address, v.id, true))]} 
+        />
 
         {/* Delivery Points markers */}
-        {deliveryPoints.map((dp) => (
-          <Marker 
-            key={dp.id} 
-            position={getDeliveryPointCoords(dp)} 
-            icon={getPointIcon(dp.type)}
-            zIndexOffset={dp.type === 'warehouse' ? 1000 : 500}
-          >
-            <Tooltip 
-              direction="top" 
-              offset={[0, -16]} 
-              opacity={1} 
-              className="glass-tooltip"
-              permanent={false}
+        {deliveryPoints.map((dp) => {
+          const isDelivered = deliveredPointIds.includes(dp.id);
+          return (
+            <Marker 
+              key={dp.id} 
+              position={getDeliveryPointCoords(dp)} 
+              icon={getPointIcon(dp.type, false, isDelivered)}
+              zIndexOffset={dp.type === 'warehouse' ? 1000 : 500}
             >
-              <div style={{ minWidth: '180px' }}>
-                <div className="glass-tooltip-title">{dp.name}</div>
-                <div className="glass-tooltip-type">
-                  {dp.type === 'warehouse' ? '🏠 Warehouse' : dp.type === 'provider' ? '🏭 Provider' : '📍 Delivery Point'}
-                </div>
-                {dp.address && (
-                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                    {dp.address}
+              <Tooltip 
+                direction="top" 
+                offset={[0, -16]} 
+                opacity={1} 
+                className="glass-tooltip"
+                permanent={false}
+              >
+                <div style={{ minWidth: '180px' }}>
+                  <div className="glass-tooltip-title">{dp.name}</div>
+                  <div className="glass-tooltip-type">
+                    {dp.type === 'warehouse' ? '🏠 Warehouse' : dp.type === 'provider' ? '🏭 Provider' : '📍 Delivery Point'}
                   </div>
-                )}
-                <div className="glass-tooltip-divider" />
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fff', marginBottom: '6px' }}>
-                  Inventory:
+                  {dp.address && (
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                      {dp.address}
+                    </div>
+                  )}
+                  <div className="glass-tooltip-divider" />
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#fff', marginBottom: '6px' }}>
+                    Inventory:
+                  </div>
+                  <ul className="glass-tooltip-list">
+                    {(inventoryMap?.get(dp.id) || []).slice(0, 5).map((prod, idx) => (
+                      <li key={idx}>
+                        {prod.name} <span>({(prod.weight / 1000).toFixed(1)}kg)</span>
+                      </li>
+                    ))}
+                    {(!inventoryMap?.has(dp.id) || (inventoryMap.get(dp.id)?.length === 0)) && (
+                      <li style={{ fontStyle: 'italic', opacity: 0.5 }}>Empty</li>
+                    )}
+                    {(inventoryMap?.get(dp.id)?.length || 0) > 5 && (
+                      <li style={{ listStyle: 'none', marginTop: '4px', opacity: 0.7 }}>
+                        + {(inventoryMap?.get(dp.id)?.length || 0) - 5} more items...
+                      </li>
+                    )}
+                  </ul>
                 </div>
-                <ul className="glass-tooltip-list">
-                  {(inventoryMap?.get(dp.id) || []).slice(0, 5).map((prod, idx) => (
-                    <li key={idx}>
-                      {prod.name} <span>({(prod.weight / 1000).toFixed(1)}kg)</span>
-                    </li>
-                  ))}
-                  {(!inventoryMap?.has(dp.id) || (inventoryMap.get(dp.id)?.length === 0)) && (
-                    <li style={{ fontStyle: 'italic', opacity: 0.5 }}>Empty</li>
-                  )}
-                  {(inventoryMap?.get(dp.id)?.length || 0) > 5 && (
-                    <li style={{ listStyle: 'none', marginTop: '4px', opacity: 0.7 }}>
-                      + {(inventoryMap?.get(dp.id)?.length || 0) - 5} more items...
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </Tooltip>
-          </Marker>
-        ))}
+              </Tooltip>
+            </Marker>
+          );
+        })}
 
         {/* Vehicles Markers (All fleet, small) */}
-        {vehicles.map((v) => (
+        {!hideStaticVehicles && vehicles.map((v) => (
           <Marker 
             key={v.id} 
             position={getAddressCoords(v.address, v.id, true)} 
@@ -347,18 +345,6 @@ export function MapWidget({ orders = [], deliveryPoints = [], inventoryMap, vehi
         {/* In-Transit routes */}
         {routes.map(({ order, waypoints, truckIdx }) => (
           <Fragment key={order.id}>
-            {/* Dashed path */}
-            <Polyline
-              positions={waypoints}
-              pathOptions={{
-                color: '#a855f7',
-                weight: 2.5,
-                opacity: 0.85,
-                dashArray: '10, 8',
-                lineCap: 'round',
-              }}
-            />
-
             {/* Origin marker */}
             <Marker position={waypoints[0]} icon={hubIcon}>
               <Popup>
@@ -368,15 +354,6 @@ export function MapWidget({ orders = [], deliveryPoints = [], inventoryMap, vehi
               </Popup>
             </Marker>
 
-            {/* Intermediate waypoint markers */}
-            {waypoints.slice(1, -1).map((wp, i) => (
-              <Marker key={i} position={wp} icon={waypointIcon}>
-                <Popup>
-                  <strong>Waypoint {i + 1}</strong><br />
-                  Order #{order.id}
-                </Popup>
-              </Marker>
-            ))}
 
             {/* Truck position marker (at 60% of route) */}
             <Marker position={waypoints[truckIdx]} icon={truckIcon}>
@@ -402,4 +379,3 @@ export function MapWidget({ orders = [], deliveryPoints = [], inventoryMap, vehi
     </div>
   );
 }
-

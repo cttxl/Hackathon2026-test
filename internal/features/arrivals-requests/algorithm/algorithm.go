@@ -13,39 +13,20 @@ import (
 // ──────────────────────────────────────────────────────────────────────────────
 // GetRecommended distributes pending requests across pending arrivals.
 //
-// Output: one entry per arrival (per truck trip).
-//
-// Algorithm:
-//  1. Load all pending requests (with product dimensions, weight, emergency,
-//     and delivery_point address).
-//  2. Sort by emergency urgency: critical → high → default (FIFO within tier).
-//  3. Load all pending arrivals (with vehicle capacity, fuel_consumption,
-//     and vehicle address — the starting point of the truck).
-//  4. Pre-geocode all unique addresses (vehicle + delivery point) once
-//     via Nominatim, then cache coordinates for route calculations.
-//  5. For each request (in urgency order) pick the best arrival:
-//     a. Filter: unit dimensions fit + enough remaining weight + volume.
-//     b. Score: total_fuel_cost = distance_km × fuel_consumption.
-//     Distance is calculated via OSRM from vehicle address to the
-//     request's delivery point address.
-//     c. Pick the arrival with the LOWEST fuel cost.
-//     d. Deduct capacity → next request sees updated remainders (bin-packing).
-//  6. One output entry per truck:
-//     - arrival_id, request_id (most urgent), sku_ids (all products),
-//     priority (truck rank, 1 = most urgent cargo).
-//
+// New Algorithm (Requested by user):
+//  1. Load all pending requests.
+//  2. Load all pending arrivals (sorted by time).
+//  3. Sort requests by urgency: critical (0) > high (1) > default (2).
+//  4. For each request, pick arrival sequentially (i % len(arrivals)).
 // ──────────────────────────────────────────────────────────────────────────────
 func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, error) {
-	// ── 1. Fetch all pending requests ────────────────────────────────────────
+	// 1. Fetch all pending requests
 	requests, err := fetchPendingRequests(ctx, db)
 	if err != nil {
 		return nil, err
 	}
 
-	// ── 2. Sort by emergency urgency, then FIFO ─────────────────────────────
-	sortByUrgency(requests)
-
-	// ── 3. Fetch all pending arrivals ────────────────────────────────────────
+	// 2. Fetch all pending arrivals (already sorted by a.time_to_arrival ASC)
 	arrivals, err := fetchPendingArrivals(ctx, db)
 	if err != nil {
 		return nil, err
@@ -55,65 +36,39 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 		return []domain.ArrivalRequest{}, nil
 	}
 
-	// ── 4. Pack requests into arrivals ───────────────────────────────────────
-	assignment := make(map[int][]int)
-	var arrivalOrder []int
-	arrivalSeen := make(map[int]bool)
+	// 3. Sort requests by urgency rank
+	sort.Slice(requests, func(i, j int) bool {
+		return emergencyRank(requests[i].emergency) < emergencyRank(requests[j].emergency)
+	})
 
-	// Track delivery point addresses already assigned to each arrival,
-	// so we can compute total route cost incrementally.
-	arrivalDeliveryAddrs := make(map[int][]string)
-
-	for reqIdx, req := range requests {
-		cargoWeight := req.pWeight * req.quantity
-		cargoVol := req.pHeight * req.pWidth * req.pLength * req.quantity
-
-		bestIdx := pickBestArrival(
-			req, cargoWeight, cargoVol,
-			arrivals, arrivalDeliveryAddrs,
-		)
-		if bestIdx < 0 {
-			log.Printf("[algorithm] no arrival fits request %s (product %s, qty %d) — skipped",
-				req.requestID, req.productID, req.quantity)
-			continue
-		}
-
-		// Deduct capacity.
-		arrivals[bestIdx].remainWeight -= cargoWeight
-		arrivals[bestIdx].remainVol -= cargoVol
-
-		// Track delivery address for route cost calculation.
-		arrivalDeliveryAddrs[bestIdx] = append(arrivalDeliveryAddrs[bestIdx], req.dpAddress)
-
-		if !arrivalSeen[bestIdx] {
-			arrivalSeen[bestIdx] = true
-			arrivalOrder = append(arrivalOrder, bestIdx)
-		}
-
-		assignment[bestIdx] = append(assignment[bestIdx], reqIdx)
-	}
-
-	// ── 6. Build output: ONE entry per truck ─────────────────────────────────
+	// 4. For each request, pick arrival sequentially
 	now := time.Now()
-	out := make([]domain.ArrivalRequest, 0, len(arrivalOrder))
+	out := make([]domain.ArrivalRequest, 0, len(requests))
 
-	for priority, arrIdx := range arrivalOrder {
-		reqIdxList := assignment[arrIdx]
-
-		for _, ri := range reqIdxList {
-			req := requests[ri]
-			out = append(out, domain.ArrivalRequest{
-				ArrivalID: arrivals[arrIdx].arrivalID,
-				RequestID: req.requestID,
-				SkuIDs:    []string{req.skuID},
-				Priority:  priority + 1,
-				CreatedAt: now,
-				UpdatedAt: now,
-			})
-		}
+	for i, req := range requests {
+		// Pick arrival sequentially based on urgency
+		arrIdx := i % len(arrivals)
+		
+		out = append(out, domain.ArrivalRequest{
+			ArrivalID: arrivals[arrIdx].arrivalID,
+			RequestID: req.requestID,
+			CreatedAt: now,
+			UpdatedAt: now,
+		})
 	}
 
 	return out, nil
+}
+
+func emergencyRank(e string) int {
+	switch e {
+	case "critical":
+		return 0
+	case "high":
+		return 1
+	default:
+		return 2
+	}
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -123,7 +78,6 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 type pendingRequest struct {
 	requestID string
 	productID string
-	skuID     string
 	emergency string
 	quantity  int
 	createdAt time.Time
@@ -152,7 +106,6 @@ func fetchPendingRequests(ctx context.Context, db *sql.DB) ([]pendingRequest, er
 		SELECT
 			r.id          AS request_id,
 			r.product_id,
-			s.id          AS sku_id,
 			r.emergency,
 			r.quantity,
 			r.created_at,
@@ -164,8 +117,7 @@ func fetchPendingRequests(ctx context.Context, db *sql.DB) ([]pendingRequest, er
 		FROM  requests        r
 		JOIN  products        p  ON p.id  = r.product_id
 		JOIN  delivery_points dp ON dp.id = r.delivery_point_id
-		JOIN  sku             s  ON s.product_id = r.product_id AND s.delivery_point_id = r.delivery_point_id
-		WHERE r.status = 'pending'
+		WHERE r.status IN ('pending', 'accepted')
 	`
 
 	rows, err := db.QueryContext(ctx, query)
@@ -180,7 +132,6 @@ func fetchPendingRequests(ctx context.Context, db *sql.DB) ([]pendingRequest, er
 		if err := rows.Scan(
 			&req.requestID,
 			&req.productID,
-			&req.skuID,
 			&req.emergency,
 			&req.quantity,
 			&req.createdAt,
@@ -207,7 +158,7 @@ func fetchPendingArrivals(ctx context.Context, db *sql.DB) ([]pendingArrival, er
 			v.address         AS vehicle_address
 		FROM  arrivals  a
 		JOIN  vehicles  v ON v.id = a.transport_id
-		WHERE a.status = 'pending'
+		WHERE a.status IN ('pending', 'accepted')
 		ORDER BY a.time_to_arrival ASC
 	`
 
@@ -239,145 +190,3 @@ func fetchPendingArrivals(ctx context.Context, db *sql.DB) ([]pendingArrival, er
 	return out, rows.Err()
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Sorting
-// ──────────────────────────────────────────────────────────────────────────────
-
-func emergencyRank(e string) int {
-	switch e {
-	case "critical":
-		return 0
-	case "high":
-		return 1
-	default:
-		return 2
-	}
-}
-
-func sortByUrgency(reqs []pendingRequest) {
-	sort.SliceStable(reqs, func(i, j int) bool {
-		ri, rj := emergencyRank(reqs[i].emergency), emergencyRank(reqs[j].emergency)
-		if ri != rj {
-			return ri < rj
-		}
-		return reqs[i].createdAt.Before(reqs[j].createdAt)
-	})
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Arrival selection
-// ──────────────────────────────────────────────────────────────────────────────
-
-// pickBestArrival finds the optimal arrival for a request.
-//
-// Phase 1 — filter arrivals where:
-//   - product unit fits vehicle dimensions
-//   - remaining weight + volume are sufficient
-//
-// Phase 2 — score each fitting arrival:
-//
-//	fuelCost = distance_km(vehicle → delivery_point) × fuel_consumption
-//
-// If multiple requests are already assigned to an arrival, we add the new
-// delivery point distance to the total route cost to evaluate the incremental
-// cost of packing one more request into this truck.
-//
-// Lowest total fuel cost wins.
-func pickBestArrival(
-	req pendingRequest,
-	cargoWeight, cargoVol int,
-	arrivals []pendingArrival,
-	arrivalDeliveryAddrs map[int][]string,
-) int {
-	unitFits := func(a pendingArrival) bool {
-		return req.pHeight <= a.maxHeight &&
-			req.pWidth <= a.maxWidth &&
-			req.pLength <= a.maxLength
-	}
-
-	// Phase 1: collect arrivals that fully fit.
-	type candidate struct {
-		idx      int
-		fuelCost float64
-	}
-	var fits []candidate
-
-	for i, a := range arrivals {
-		if !unitFits(a) {
-			continue
-		}
-		if a.remainWeight < cargoWeight || a.remainVol < cargoVol {
-			continue
-		}
-
-		// Calculate fuel cost for this assignment.
-		cost := estimateFuelCost(a, req.dpAddress, arrivalDeliveryAddrs[i])
-		fits = append(fits, candidate{idx: i, fuelCost: cost})
-	}
-
-	// Phase 2: lowest fuel cost.
-	if len(fits) > 0 {
-		best := fits[0]
-		for _, c := range fits[1:] {
-			if c.fuelCost < best.fuelCost {
-				best = c
-			}
-		}
-		return best.idx
-	}
-
-	// Fallback: biggest remaining capacity.
-	best := -1
-	for i, a := range arrivals {
-		if unitFits(a) {
-			if best < 0 || a.remainWeight > arrivals[best].remainWeight {
-				best = i
-			}
-		}
-	}
-	if best < 0 && len(arrivals) > 0 {
-		best = 0
-	}
-
-	if best >= 0 {
-		log.Printf(
-			"[algorithm] request %s (product %s, qty %d, w=%d, v=%d) "+
-				"overflows arrival %s (remain w=%d, v=%d) — fallback",
-			req.requestID, req.productID, req.quantity, cargoWeight, cargoVol,
-			arrivals[best].arrivalID,
-			arrivals[best].remainWeight, arrivals[best].remainVol,
-		)
-	}
-
-	return best
-}
-
-// estimateFuelCost calculates total fuel cost for an arrival if we add
-// a new delivery point to its route.
-//
-// Cost = sum of distances from vehicle to each delivery point × fuel_consumption.
-// Each delivery point is computed independently (hub-and-spoke model).
-func estimateFuelCost(arrival pendingArrival, newAddr string, existingAddrs []string) float64 {
-	// Collect all delivery addresses: existing + the new one.
-	allAddrs := make([]string, 0, len(existingAddrs)+1)
-	allAddrs = append(allAddrs, existingAddrs...)
-	allAddrs = append(allAddrs, newAddr)
-
-	// Deduplicate — same destination doesn't add extra distance.
-	seen := make(map[string]bool)
-	var unique []string
-	for _, addr := range allAddrs {
-		if !seen[addr] {
-			seen[addr] = true
-			unique = append(unique, addr)
-		}
-	}
-
-	totalDistKm := 0.0
-	for _, destAddr := range unique {
-		totalDistKm += GetDistanceKm(arrival.vehicleAddress, destAddr)
-	}
-
-	// fuel_consumption is per km, so total fuel = distance × consumption.
-	return totalDistKm * float64(arrival.fuelConsumption)
-}

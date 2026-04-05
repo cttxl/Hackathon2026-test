@@ -110,7 +110,7 @@ export interface ApiRequest {
   delivery_point_id: string;
   sku_id: string;
   status: RequestStatus;
-  emergency: boolean;
+  emergency: 'default' | 'high' | 'critical';
 }
 
 // --- Arrivals ---
@@ -142,15 +142,11 @@ export interface ApiArrivalRequest {
   id: string;
   arrival_id: string;
   request_id: string;
-  sku_ids: string[];
-  priority: number;
 }
 
 export interface ApiCreateArrivalRequestEntry {
   arrival_id: string;
   request_id: string;
-  sku_ids: string[];
-  priority: number;
 }
 
 // --- Paginated response wrapper ---
@@ -179,6 +175,8 @@ export interface Order {
   timeToDeparture: string;
   timeOfArrival: string;
   status: OrderStatus;
+  destination?: string;
+  linkedRequests?: ApiRequest[];
   /** Raw API arrival for edit/patch operations */
   _raw?: ApiArrival;
 }

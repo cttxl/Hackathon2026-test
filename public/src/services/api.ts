@@ -140,11 +140,19 @@ export async function getArrivalRequests(arrivalId: string): Promise<ApiListResp
   return apiFetch<ApiListResponse<ApiArrivalRequest>>(`/arrivals-requests?arrival_id=${arrivalId}&limit=100`);
 }
 
+export async function getAllArrivalRequests(page = 1, limit = 1000): Promise<ApiListResponse<ApiArrivalRequest>> {
+  return apiFetch<ApiListResponse<ApiArrivalRequest>>(`/arrivals-requests?page=${page}&limit=${limit}`);
+}
+
 export async function createArrivalRequest(data: ApiCreateArrivalRequestEntry): Promise<ApiArrivalRequest> {
   return apiFetch<ApiArrivalRequest>('/arrivals-requests', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+export async function deleteArrivalRequest(id: string): Promise<void> {
+  return apiFetch<void>(`/arrivals-requests/${id}`, { method: 'DELETE' });
 }
 
 export async function getRecommendedArrivalRequests(): Promise<ApiListResponse<ApiArrivalRequest>> {
@@ -158,7 +166,7 @@ export async function getSkus(pointId: string, page = 1, limit = 10): Promise<Ap
 }
 
 export async function getRequests(filters?: { delivery_point_id?: string; sku_id?: string; status?: RequestStatus }): Promise<ApiListResponse<ApiRequest>> {
-  let query = '?limit=100';
+  let query = '?limit=1000';
   if (filters?.delivery_point_id) query += `&delivery_point_id=${filters.delivery_point_id}`;
   if (filters?.sku_id) query += `&sku_id=${filters.sku_id}`;
   if (filters?.status) query += `&status=${filters.status}`;

@@ -1,0 +1,15 @@
+.point-badge-interactive {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.point-badge-interactive:hover {
+  background: rgba(56,189,248,0.2) !important;
+  border-color: rgba(56,189,248,0.5) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+}
+
+.point-badge-interactive:active {
+  transform: translateY(0);
+  background: rgba(56,189,248,0.3) !important;
+}

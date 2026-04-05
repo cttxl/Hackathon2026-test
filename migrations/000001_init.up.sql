@@ -104,8 +104,7 @@ CREATE TABLE requests (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (delivery_point_id) REFERENCES delivery_points(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (delivery_point_id) REFERENCES delivery_points(id) ON DELETE CASCADE
 );
 
 
@@ -133,53 +132,12 @@ CREATE TABLE arrivals_requests (
     arrival_id UUID NOT NULL,
     request_id UUID NOT NULL,
 
-    sku_ids UUID[] NOT NULL,
-
-    priority INT NOT NULL,
-
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP ,
 
     FOREIGN KEY (arrival_id) REFERENCES arrivals(id) ON DELETE CASCADE,
     FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE CASCADE
 );
-
--- Емуляція FOREIGN KEY для масиву sku_ids з перевіркою існування
-CREATE OR REPLACE FUNCTION check_sku_ids_exist()
-RETURNS TRIGGER AS $$
-DECLARE
-    missing_count INT;
-BEGIN
-    SELECT COUNT(*) INTO missing_count
-    FROM unnest(NEW.sku_ids) AS s(id)
-    WHERE NOT EXISTS (SELECT 1 FROM sku WHERE id = s.id);
-
-    IF missing_count > 0 THEN
-        RAISE EXCEPTION 'FOREIGN KEY VIOLATION: One or more sku_ids do not exist in sku table';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_check_sku_ids
-BEFORE INSERT OR UPDATE ON arrivals_requests
-FOR EACH ROW
-EXECUTE FUNCTION check_sku_ids_exist();
-
--- Емуляція ON DELETE CASCADE для масиву sku_ids
-CREATE OR REPLACE FUNCTION cascade_delete_sku()
-RETURNS TRIGGER AS $$
-BEGIN
-    DELETE FROM arrivals_requests WHERE OLD.id = ANY(sku_ids);
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_cascade_delete_sku
-AFTER DELETE ON sku
-FOR EACH ROW
-EXECUTE FUNCTION cascade_delete_sku();
 
 
 

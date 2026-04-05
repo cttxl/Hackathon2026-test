@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/cttxl/Hackathon2026-test/internal/core/domain"
 	"github.com/cttxl/Hackathon2026-test/internal/features/arrivals-requests/algorithm"
 )
@@ -29,11 +28,11 @@ func (r *ArrivalRequestRepository) Create(ctx context.Context, input domain.Arri
 
 	var ar domain.ArrivalRequest
 	err = tx.QueryRowContext(ctx,
-		`INSERT INTO arrivals_requests (arrival_id, request_id, sku_ids, priority)
-		 VALUES ($1, $2, $3, $4)
-		 RETURNING id, arrival_id, request_id, sku_ids, priority, created_at, updated_at`,
-		input.ArrivalID, input.RequestID, pq.Array(input.SkuIDs), input.Priority,
-	).Scan(&ar.ID, &ar.ArrivalID, &ar.RequestID, pq.Array(&ar.SkuIDs), &ar.Priority, &ar.CreatedAt, &ar.UpdatedAt)
+		`INSERT INTO arrivals_requests (arrival_id, request_id)
+		 VALUES ($1, $2)
+		 RETURNING id, arrival_id, request_id, created_at, updated_at`,
+		input.ArrivalID, input.RequestID,
+	).Scan(&ar.ID, &ar.ArrivalID, &ar.RequestID, &ar.CreatedAt, &ar.UpdatedAt)
 
 	if err != nil {
 		return domain.ArrivalRequest{}, err
@@ -54,9 +53,9 @@ func (r *ArrivalRequestRepository) Create(ctx context.Context, input domain.Arri
 func (r *ArrivalRequestRepository) GetByID(ctx context.Context, id string) (domain.ArrivalRequest, error) {
 	var ar domain.ArrivalRequest
 	err := r.db.QueryRowContext(ctx,
-		`SELECT id, arrival_id, request_id, sku_ids, priority, created_at, updated_at
+		`SELECT id, arrival_id, request_id, created_at, updated_at
 		 FROM arrivals_requests WHERE id = $1`, id,
-	).Scan(&ar.ID, &ar.ArrivalID, &ar.RequestID, pq.Array(&ar.SkuIDs), &ar.Priority, &ar.CreatedAt, &ar.UpdatedAt)
+	).Scan(&ar.ID, &ar.ArrivalID, &ar.RequestID, &ar.CreatedAt, &ar.UpdatedAt)
 	return ar, err
 }
 
@@ -69,7 +68,7 @@ func (r *ArrivalRequestRepository) List(ctx context.Context, page, limit int) ([
 
 	offset := (page - 1) * limit
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, arrival_id, request_id, sku_ids, priority, created_at, updated_at
+		`SELECT id, arrival_id, request_id, created_at, updated_at
 		 FROM arrivals_requests ORDER BY created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -79,7 +78,7 @@ func (r *ArrivalRequestRepository) List(ctx context.Context, page, limit int) ([
 	var arrivalRequests []domain.ArrivalRequest
 	for rows.Next() {
 		var ar domain.ArrivalRequest
-		if err := rows.Scan(&ar.ID, &ar.ArrivalID, &ar.RequestID, pq.Array(&ar.SkuIDs), &ar.Priority, &ar.CreatedAt, &ar.UpdatedAt); err != nil {
+		if err := rows.Scan(&ar.ID, &ar.ArrivalID, &ar.RequestID, &ar.CreatedAt, &ar.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
 		arrivalRequests = append(arrivalRequests, ar)
@@ -102,16 +101,6 @@ func (r *ArrivalRequestRepository) Update(ctx context.Context, id string, input 
 		args = append(args, *input.RequestID)
 		argIdx++
 	}
-	if input.SkuIDs != nil {
-		setClauses = append(setClauses, fmt.Sprintf("sku_ids = $%d", argIdx))
-		args = append(args, pq.Array(*input.SkuIDs))
-		argIdx++
-	}
-	if input.Priority != nil {
-		setClauses = append(setClauses, fmt.Sprintf("priority = $%d", argIdx))
-		args = append(args, *input.Priority)
-		argIdx++
-	}
 
 	if len(setClauses) == 0 {
 		return r.GetByID(ctx, id)
@@ -124,13 +113,13 @@ func (r *ArrivalRequestRepository) Update(ctx context.Context, id string, input 
 	args = append(args, id)
 	query := fmt.Sprintf(
 		`UPDATE arrivals_requests SET %s WHERE id = $%d
-		 RETURNING id, arrival_id, request_id, sku_ids, priority, created_at, updated_at`,
+		 RETURNING id, arrival_id, request_id, created_at, updated_at`,
 		strings.Join(setClauses, ", "), argIdx,
 	)
 
 	var ar domain.ArrivalRequest
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(
-		&ar.ID, &ar.ArrivalID, &ar.RequestID, pq.Array(&ar.SkuIDs), &ar.Priority, &ar.CreatedAt, &ar.UpdatedAt,
+		&ar.ID, &ar.ArrivalID, &ar.RequestID, &ar.CreatedAt, &ar.UpdatedAt,
 	)
 	return ar, err
 }
