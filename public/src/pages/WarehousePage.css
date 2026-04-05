@@ -96,7 +96,6 @@
   padding-right: 8px;
 }
 
-
 .scrollable-content::-webkit-scrollbar {
   width: 5px;
 }
@@ -237,19 +236,10 @@
   color: #67e8f9;
 }
 
-
 @keyframes criticalPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4);
-  }
-
-  70% {
-    box-shadow: 0 0 0 8px rgba(248, 113, 113, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
 }
 
 .critical-tag {
@@ -258,7 +248,6 @@
   background: rgba(248, 113, 113, 0.15) !important;
   color: #fca5a5 !important;
 }
-
 
 .pagination-controls {
   display: flex;
@@ -305,12 +294,12 @@
   color: #2dd4bf;
 }
 
+/* ──────────────── Responsive Queries ──────────────── */
 
 @media (max-width: 1024px) {
   .warehouse-split-layout {
     grid-template-columns: 1fr;
   }
-
   .warehouse-dashboard-container {
     height: auto;
     min-height: 100vh;
@@ -322,31 +311,50 @@
   .warehouse-dashboard-container {
     padding: 16px;
   }
-  
   .warehouse-header-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-
   .inventory-panel, .operations-panel {
     padding: 16px;
   }
-
   .inventory-table th, .inventory-table td {
     padding: 10px;
     font-size: 13px;
+    white-space: nowrap;
   }
-
+  .table-scroll-wrapper {
+    overflow-x: auto;
+    width: 100%;
+  }
   .operation-card {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
   .btn-action-teal {
     width: 100%;
     justify-content: center;
   }
 }
 
+@media (max-width: 480px) {
+  .warehouse-dashboard-container {
+    padding: 12px;
+  }
+  .panel-title {
+    font-size: 18px;
+  }
+  .warehouse-selector-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 375px) {
+  .tab-btn {
+    font-size: 12px;
+    padding: 6px;
+  }
+}

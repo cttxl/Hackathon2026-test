@@ -135,7 +135,7 @@ html, body, #root {
 
 @media (max-width: 768px) {
   html, body, #root {
-    overflow: auto;  /* allow page-level scroll on mobile */
+    overflow: auto;
   }
 
   .app-main {
@@ -152,6 +152,18 @@ html, body, #root {
       rgba(56, 189, 248, 0.10),
       transparent 50%
     );
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 375px) {
+  .brand-title {
+    font-size: 20px;
   }
 }
 

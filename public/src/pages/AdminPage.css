@@ -5,7 +5,6 @@
   height: 100%;
   padding: 28px 36px;
   overflow: hidden;
-  /* children scroll themselves */
 }
 
 .admin-header {
@@ -87,9 +86,7 @@
   border-radius: 16px;
   overflow-y: auto;
   flex: 1 1 0;
-  /* fills all remaining height inside admin-dashboard-container */
   min-height: 0;
-  /* required for flex children to shrink properly */
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -109,7 +106,6 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 0;
-  /* keep header visible while scrolling */
   z-index: 1;
 }
 
@@ -213,6 +209,7 @@
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
+
 @media (max-width: 1024px) {
   .admin-dashboard-container {
     padding: 20px;
@@ -245,7 +242,6 @@
 
   .table-container {
     border-radius: 12px;
-    /* ensure table scrolls horizontally on small screens */
     overflow-x: auto;
   }
 
@@ -270,3 +266,27 @@
   }
 }
 
+@media (max-width: 480px) {
+  .admin-title {
+    font-size: 24px;
+  }
+  
+  .btn-primary, .btn-secondary {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .modal-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 375px) {
+  .admin-dashboard-container {
+    padding: 12px;
+  }
+  
+  .header-actions {
+    gap: 10px;
+  }
+}

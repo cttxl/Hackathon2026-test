@@ -40,3 +40,35 @@
   border-color: rgba(239, 68, 68, 0.5) !important;
   color: #fff !important;
 }
+
+/* ──────────────── Responsive Queries ──────────────── */
+
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 22px;
+  }
+  
+  .header-right {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .user-label {
+    font-size: 15px;
+    width: 100%; /* forces logout button to next row if needed, but flex-wrap handles it */
+  }
+  
+  .btn-logout {
+    width: 100%;
+    text-align: center;
+  }
+}

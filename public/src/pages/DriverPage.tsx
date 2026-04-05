@@ -236,32 +236,16 @@ export function DriverPage() {
                     </span>
 
                     {/* Transit path */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-                      <span style={{
-                        background: 'rgba(56,189,248,0.15)',
-                        border: '1px solid rgba(56,189,248,0.4)',
-                        color: '#38bdf8',
-                        padding: '3px 10px',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                      }}>
+                    <div className="transit-path">
+                      <span className="path-point departure-point">
                         📦 {order.placeOfDeparture}
                       </span>
 
-                      <span style={{ color: '#94a3b8', fontSize: '16px', letterSpacing: '2px' }}>
+                      <span className="path-arrow">
                         - - - →
                       </span>
 
-                      <span style={{
-                        background: 'rgba(34,197,94,0.15)',
-                        border: '1px solid rgba(34,197,94,0.4)',
-                        color: '#22c55e',
-                        padding: '3px 10px',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                      }}>
+                      <span className="path-point destination-point">
                         🏁 {order.destination}
                       </span>
                     </div>
@@ -282,11 +266,11 @@ export function DriverPage() {
                       if (uniqueDpIds.length === 0) return null;
                       
                       return (
-                        <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
-                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>
+                        <div className="dp-mini-list-container">
+                          <div className="dp-mini-list-title">
                             Delivery Points ({uniqueDpIds.length})
                           </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          <div className="dp-mini-list">
                             {uniqueDpIds.map((dpId: any) => {
                               const dp = deliveryPoints.find((p: any) => p.id === dpId);
                               const isDelivering = deliveringPointId === dpId;
@@ -296,23 +280,11 @@ export function DriverPage() {
                                 <div 
                                   key={dpId} 
                                   onClick={() => !allDelivered && handlePointDelivery(dpId, order)}
+                                  className={`dp-mini-badge ${allDelivered ? 'dp-badge-delivered' : 'dp-badge-active'} ${!allDelivered ? 'point-badge-interactive' : ''}`}
                                   style={{
-                                    background: allDelivered ? 'rgba(34,197,94,0.1)' : 'rgba(56,189,248,0.1)',
-                                    border: `1px solid ${allDelivered ? 'rgba(34,197,94,0.3)' : 'rgba(56,189,248,0.3)'}`,
-                                    color: allDelivered ? '#86efac' : '#7dd3fc',
-                                    padding: '4px 10px',
-                                    borderRadius: '6px',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    cursor: allDelivered ? 'default' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    transition: 'all 0.2s ease',
                                     opacity: isDelivering ? 0.6 : 1,
                                     pointerEvents: isDelivering ? 'none' : 'auto',
                                   }}
-                                  className={!allDelivered ? 'point-badge-interactive' : ''}
                                 >
                                   {isDelivering ? '⏳' : allDelivered ? '✅' : '📍'} {dp?.name || 'Unknown Point'}
                                 </div>

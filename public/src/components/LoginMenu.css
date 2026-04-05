@@ -115,4 +115,15 @@
     font-size: 15px;
     padding: 12px;
   }
-}
+}
+
+@media (max-width: 375px) {
+  .login-menu-glass {
+    padding: 24px 16px;
+    margin: 0 10px;
+  }
+  
+  .login-title {
+    font-size: 20px;
+  }
+}
