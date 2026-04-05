@@ -31,6 +31,15 @@ func (h *RequestHandler) RegisterRoutes(r chi.Router) {
 	})
 }
 
+func (h *RequestHandler) RegisterClientRoutes(r chi.Router) {
+	r.Route("/requests", func(r chi.Router) {
+		r.Post("/", h.Create)
+		r.Get("/", h.List)
+		r.Get("/{id}", h.GetByID)
+		r.Delete("/{id}", h.Delete)
+	})
+}
+
 func (h *RequestHandler) Create(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetClaims(r.Context())
 	var input domain.RequestCreate

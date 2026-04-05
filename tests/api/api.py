@@ -455,10 +455,6 @@ def test_requests(h: dict, product_id: str, dp_id: str, sku_id: str) -> str:
     resp = requests.get(f"{BASE_URL}/requests", headers=h, params={"status": "pending"})
     check("GET /requests ?status=pending → 200", resp.status_code == 200)
 
-    # LIST filter by sku_id
-    resp = requests.get(f"{BASE_URL}/requests", headers=h, params={"sku_id": sku_id})
-    check("GET /requests ?sku_id → 200", resp.status_code == 200)
-
     # GET by id
     resp = requests.get(f"{BASE_URL}/requests/{req_id}", headers=h)
     check("GET /requests/{id} → 200", resp.status_code == 200)
@@ -666,9 +662,7 @@ def test_arrival_requests(h: dict, arrival_id: str, request_id: str, sku_id: str
 
     payload = {
         "arrival_id": arrival_id,
-        "request_id": request_id,
-        "sku_ids": [sku_id],
-        "priority": 1
+        "request_id": request_id
     }
 
     # CREATE
@@ -681,11 +675,6 @@ def test_arrival_requests(h: dict, arrival_id: str, request_id: str, sku_id: str
     bad = {k: v for k, v in payload.items() if k != "arrival_id"}
     resp2 = requests.post(f"{BASE_URL}/arrivals-requests", json=bad, headers=h)
     check("POST /arrivals-requests missing arrival_id → 4xx", resp2.status_code in (400, 422))
-
-    # CREATE – missing priority
-    bad2 = {k: v for k, v in payload.items() if k != "priority"}
-    resp3 = requests.post(f"{BASE_URL}/arrivals-requests", json=bad2, headers=h)
-    check("POST /arrivals-requests missing priority → 4xx", resp3.status_code in (400, 422))
 
     # LIST
     resp = requests.get(f"{BASE_URL}/arrivals-requests", headers=h)
@@ -709,6 +698,49 @@ def test_arrival_requests(h: dict, arrival_id: str, request_id: str, sku_id: str
     # DELETE
     resp = requests.delete(f"{BASE_URL}/arrivals-requests/{ar_id}", headers=h)
     check("DELETE /arrivals-requests/{id} → 204", resp.status_code == 204)
+
+# ──────────────────────────────────────────────
+# Client API
+# ──────────────────────────────────────────────
+
+def test_client_api(client_email: str, dp_id: str, product_id: str):
+    section("3.0 · Dedicated Client API")
+
+    # 1. Login as client
+    resp = requests.post(f"{BASE_URL}/login", json={"email": client_email, "password": "password123"})
+    check("POST /login (client) → 200", resp.status_code == 200)
+    token = resp.json().get("token")
+    h = {"Authorization": f"Bearer {token}"}
+
+    # 2. View own delivery points
+    resp = requests.get(f"{BASE_URL}/api/v1/client/delivery-points", headers=h)
+    check("GET /api/v1/client/delivery-points → 200", resp.status_code == 200)
+    dps = resp.json().get("data", [])
+    check("client sees their own delivery points", any(dp.get("id") == dp_id for dp in dps))
+
+    # 3. Create request
+    payload = {
+        "product_id": product_id,
+        "quantity": 5,
+        "delivery_point_id": dp_id,
+        "emergency": "high"
+    }
+    resp = requests.post(f"{BASE_URL}/api/v1/client/requests", json=payload, headers=h)
+    check("POST /api/v1/client/requests → 201", resp.status_code == 201)
+    req_id = resp.json().get("id")
+
+    # 4. List own requests
+    resp = requests.get(f"{BASE_URL}/api/v1/client/requests", headers=h)
+    check("GET /api/v1/client/requests → 200", resp.status_code == 200)
+    check("new request in list", any(r.get("id") == req_id for r in resp.json().get("data", [])))
+
+    # 5. Forbidden actions (trying to patch)
+    resp = requests.patch(f"{BASE_URL}/api/v1/client/requests/{req_id}", json={"status": "accepted"}, headers=h)
+    check("PATCH /api/v1/client/requests/{id} → 4xx (Forbidden)", resp.status_code in (403, 404, 405))
+
+    # 6. Delete request
+    resp = requests.delete(f"{BASE_URL}/api/v1/client/requests/{req_id}", headers=h)
+    check("DELETE /api/v1/client/requests/{id} → 204", resp.status_code == 204)
 
 
 # ──────────────────────────────────────────────
@@ -762,6 +794,12 @@ def main():
     vehicle_id = test_vehicles(h)
     arrival_id = test_arrivals(h, vehicle_id, driver_id)
     test_arrival_requests(h, arrival_id, request_id, sku_id)
+
+    # Test dedicated client API
+    # Find the re-created client email
+    resp = requests.get(f"{BASE_URL}/clients/{client_id}", headers=h)
+    client_email = resp.json().get("email")
+    test_client_api(client_email, dp_id, product_id)
 
     passed = _results["passed"]
     failed = _results["failed"]

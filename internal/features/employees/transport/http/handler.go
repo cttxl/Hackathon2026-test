@@ -24,12 +24,11 @@ func NewEmployeeHandler(repo *repo.EmployeeRepository) *EmployeeHandler {
 
 func (h *EmployeeHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/employees", func(r chi.Router) {
-		r.Use(middleware.AdminOnly)
-		r.Post("/", h.Create)
+		r.With(middleware.AdminOnly).Post("/", h.Create)
 		r.Get("/", h.List)
 		r.Get("/{id}", h.GetByID)
-		r.Patch("/{id}", h.Update)
-		r.Delete("/{id}", h.Delete)
+		r.With(middleware.AdminOnly).Patch("/{id}", h.Update)
+		r.With(middleware.AdminOnly).Delete("/{id}", h.Delete)
 	})
 }
 

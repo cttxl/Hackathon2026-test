@@ -80,9 +80,20 @@ func main() {
 		clientsHttp.NewClientHandler(clientsRepo.NewClientRepository(db)).RegisterRoutes(r)
 		vehiclesHttp.NewVehicleHandler(vehiclesRepo.NewVehicleRepository(db)).RegisterRoutes(r)
 		productsHttp.NewProductHandler(productsRepo.NewProductRepository(db)).RegisterRoutes(r)
-		dpHttp.NewDeliveryPointHandler(dpRepo.NewDeliveryPointRepository(db)).RegisterRoutes(r)
 		skuHttp.NewSKUHandler(skuRepo.NewSKURepository(db)).RegisterRoutes(r)
-		requestsHttp.NewRequestHandler(requestsRepo.NewRequestRepository(db)).RegisterRoutes(r)
+		
+		requestHandler := requestsHttp.NewRequestHandler(requestsRepo.NewRequestRepository(db))
+		requestHandler.RegisterRoutes(r)
+		
+		dpHandler := dpHttp.NewDeliveryPointHandler(dpRepo.NewDeliveryPointRepository(db))
+		dpHandler.RegisterRoutes(r)
+
+		// Dedicated Client API
+		r.Route("/api/v1/client", func(r chi.Router) {
+			requestHandler.RegisterClientRoutes(r)
+			dpHandler.RegisterClientRoutes(r)
+		})
+
 		arrivalsHttp.NewArrivalHandler(arrivalsRepo.NewArrivalRepository(db)).RegisterRoutes(r)
 
 		arHttp.NewArrivalRequestHandler(arRepo.NewArrivalRequestRepository(db)).RegisterRoutes(r)

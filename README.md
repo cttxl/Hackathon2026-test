@@ -266,3 +266,32 @@ Fleet capabilities available throughout logistics network topologies.
 - `fuel_type` (string): Enum constraints limited strictly to `diesel`, `gasoline`, `electric`.
 - `fuel_consumption` (int): General boundary efficiency constraint mappings > 0.
 - `max_weight`, `max_height`, `max_width`, `max_length` (int): Limit properties matching exact item storage rules > 0.
+
+---
+
+## Client API Interface (Dedicated)
+
+A dedicated structure for corporate clients to integrate seamlessly. All client-specific endpoints are prefixed with `/api/v1/client`.
+
+### 1. Authentication
+Clients authenticate via the standard `/auth/login` endpoint.
+The returned JWT token must be included in the `Authorization: Bearer <token>` header.
+
+### 2. Managing Delivery Points
+Clients can view their registered delivery points to obtain destination IDs.
+- **GET `/api/v1/client/delivery-points`**: Lists points owned by the authenticated client.
+- **Rules**: Clients are restricted to VIEW-only access for delivery points.
+
+### 3. Request Lifecycle Management
+Clients can create and track material demands independently.
+- **POST `/api/v1/client/requests`**: Create a new material demand.
+    - `product_id` (UUID): Required.
+    - `delivery_point_id` (UUID): Must belong to the client.
+    - `quantity` (int): Must be > 0.
+    - `emergency` (string): `default`, `high`, `critical`.
+- **GET `/api/v1/client/requests`**: List all requests owned by the client.
+- **GET `/api/v1/client/requests/{id}`**: View details of a specific request.
+- **DELETE `/api/v1/client/requests/{id}`**: Cancel/Remove a pending request.
+- **Rules**: 
+    - Full ownership isolation is enforced: clients only interact with their own data.
+    - Requests are immutable for clients once posted; modifications require logistician intervention.

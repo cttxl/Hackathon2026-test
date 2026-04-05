@@ -10,6 +10,7 @@ import (
 	repo "github.com/cttxl/Hackathon2026-test/internal/features/delivery-points/repository/postgres"
 	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/response"
 	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/request"
+	"github.com/cttxl/Hackathon2026-test/internal/core/transport/http/middleware"
 )
 
 type DeliveryPointHandler struct {
@@ -30,7 +31,20 @@ func (h *DeliveryPointHandler) RegisterRoutes(r chi.Router) {
 	})
 }
 
+func (h *DeliveryPointHandler) RegisterClientRoutes(r chi.Router) {
+	r.Route("/delivery-points", func(r chi.Router) {
+		r.Get("/", h.List)
+		r.Get("/{id}", h.GetByID)
+	})
+}
+
 func (h *DeliveryPointHandler) Create(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r.Context())
+	if claims != nil && claims.Type == "client" {
+		response.Error(w, http.StatusForbidden, "Clients cannot create delivery points")
+		return
+	}
+
 	var input domain.DeliveryPointCreate
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		response.Error(w, http.StatusBadRequest, "Invalid request body")
@@ -72,6 +86,11 @@ func (h *DeliveryPointHandler) List(w http.ResponseWriter, r *http.Request) {
 	filterType := r.URL.Query().Get("type")
 	filterOwnerID := r.URL.Query().Get("owner_id")
 
+	claims := middleware.GetClaims(r.Context())
+	if claims != nil && claims.Type == "client" {
+		filterOwnerID = claims.ID
+	}
+
 	dps, total, err := h.repo.List(r.Context(), page, limit, filterType, filterOwnerID)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
@@ -82,6 +101,12 @@ func (h *DeliveryPointHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DeliveryPointHandler) Update(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r.Context())
+	if claims != nil && claims.Type == "client" {
+		response.Error(w, http.StatusForbidden, "Clients cannot update delivery points")
+		return
+	}
+
 	id := chi.URLParam(r, "id")
 	var input domain.DeliveryPointUpdate
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -99,6 +124,12 @@ func (h *DeliveryPointHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DeliveryPointHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r.Context())
+	if claims != nil && claims.Type == "client" {
+		response.Error(w, http.StatusForbidden, "Clients cannot delete delivery points")
+		return
+	}
+
 	id := chi.URLParam(r, "id")
 	err := h.repo.Delete(r.Context(), id)
 	if err != nil {
