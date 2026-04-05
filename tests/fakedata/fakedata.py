@@ -10,6 +10,7 @@ fake_uk = Faker('uk_UA')
 fake_en = Faker('en_US')
 
 import os
+
 BASE_URL = os.getenv("API_URL", "http://backend:8080")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@admin.com")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1111")
@@ -22,7 +23,6 @@ FAKEDATA_DRIVER_COUNT = int(os.getenv("FAKEDATA_DRIVER_COUNT", "20"))
 FAKEDATA_MANAGER_COUNT = int(os.getenv("FAKEDATA_MANAGER_COUNT", "20"))
 FAKEDATA_SKU_MIN = int(os.getenv("FAKEDATA_SKU_MIN", "1"))
 FAKEDATA_SKU_MAX = int(os.getenv("FAKEDATA_SKU_MAX", "3"))
-
 
 lviv_companies = {
     "Наша Логістика (Склади)": {"email": "main@logistics.ua", "phone": "+380320000000"},
@@ -57,26 +57,46 @@ LVIV_STREETS = [
 ]
 
 LVIV_VEHICLES = [
-    {"name": "Volvo FH16", "fuel_type": "diesel", "fuel_consumption": 32, "max_weight": 22000, "max_height": 400, "max_width": 250, "max_length": 1360},
-    {"name": "MAN TGX", "fuel_type": "diesel", "fuel_consumption": 30, "max_weight": 24000, "max_height": 400, "max_width": 250, "max_length": 1360},
-    {"name": "Scania R500", "fuel_type": "diesel", "fuel_consumption": 29, "max_weight": 20000, "max_height": 400, "max_width": 250, "max_length": 1360},
-    {"name": "DAF XF 480", "fuel_type": "diesel", "fuel_consumption": 31, "max_weight": 21000, "max_height": 400, "max_width": 250, "max_length": 1360},
-    {"name": "Mercedes-Benz Actros", "fuel_type": "diesel", "fuel_consumption": 28, "max_weight": 20500, "max_height": 400, "max_width": 250, "max_length": 1360},
-    {"name": "Mercedes-Benz Atego", "fuel_type": "diesel", "fuel_consumption": 18, "max_weight": 5000, "max_height": 350, "max_width": 240, "max_length": 600},
-    {"name": "Isuzu NQR", "fuel_type": "diesel", "fuel_consumption": 16, "max_weight": 4500, "max_height": 320, "max_width": 220, "max_length": 550},
-    {"name": "TATA LPT 613", "fuel_type": "diesel", "fuel_consumption": 15, "max_weight": 3500, "max_height": 300, "max_width": 210, "max_length": 500},
-    {"name": "Iveco Eurocargo", "fuel_type": "diesel", "fuel_consumption": 17, "max_weight": 6000, "max_height": 340, "max_width": 230, "max_length": 650},
-    {"name": "Hyundai Mighty", "fuel_type": "diesel", "fuel_consumption": 14, "max_weight": 3000, "max_height": 290, "max_width": 200, "max_length": 480},
-    {"name": "Mercedes-Benz Sprinter", "fuel_type": "diesel", "fuel_consumption": 11, "max_weight": 2000, "max_height": 270, "max_width": 175, "max_length": 330},
-    {"name": "Volkswagen Crafter", "fuel_type": "diesel", "fuel_consumption": 10, "max_weight": 1800, "max_height": 260, "max_width": 170, "max_length": 320},
-    {"name": "Ford Transit", "fuel_type": "gasoline", "fuel_consumption": 12, "max_weight": 1500, "max_height": 250, "max_width": 170, "max_length": 300},
-    {"name": "Renault Master", "fuel_type": "diesel", "fuel_consumption": 9, "max_weight": 1600, "max_height": 255, "max_width": 170, "max_length": 310},
-    {"name": "Fiat Ducato", "fuel_type": "diesel", "fuel_consumption": 10, "max_weight": 1700, "max_height": 260, "max_width": 175, "max_length": 315},
-    {"name": "Renault Kangoo Z.E.", "fuel_type": "electric", "fuel_consumption": 18, "max_weight": 650, "max_height": 180, "max_width": 150, "max_length": 220},
-    {"name": "Nissan e-NV200", "fuel_type": "electric", "fuel_consumption": 20, "max_weight": 700, "max_height": 185, "max_width": 150, "max_length": 210},
-    {"name": "Ford E-Transit", "fuel_type": "electric", "fuel_consumption": 25, "max_weight": 1200, "max_height": 250, "max_width": 170, "max_length": 300},
-    {"name": "Peugeot e-Expert", "fuel_type": "electric", "fuel_consumption": 22, "max_weight": 1000, "max_height": 190, "max_width": 160, "max_length": 250},
-    {"name": "Mercedes-Benz eSprinter", "fuel_type": "electric", "fuel_consumption": 35, "max_weight": 1000, "max_height": 260, "max_width": 170, "max_length": 320}
+    {"name": "Volvo FH16", "fuel_type": "diesel", "fuel_consumption": 32, "max_weight": 22000, "max_height": 400,
+     "max_width": 250, "max_length": 1360},
+    {"name": "MAN TGX", "fuel_type": "diesel", "fuel_consumption": 30, "max_weight": 24000, "max_height": 400,
+     "max_width": 250, "max_length": 1360},
+    {"name": "Scania R500", "fuel_type": "diesel", "fuel_consumption": 29, "max_weight": 20000, "max_height": 400,
+     "max_width": 250, "max_length": 1360},
+    {"name": "DAF XF 480", "fuel_type": "diesel", "fuel_consumption": 31, "max_weight": 21000, "max_height": 400,
+     "max_width": 250, "max_length": 1360},
+    {"name": "Mercedes-Benz Actros", "fuel_type": "diesel", "fuel_consumption": 28, "max_weight": 20500,
+     "max_height": 400, "max_width": 250, "max_length": 1360},
+    {"name": "Mercedes-Benz Atego", "fuel_type": "diesel", "fuel_consumption": 18, "max_weight": 5000,
+     "max_height": 350, "max_width": 240, "max_length": 600},
+    {"name": "Isuzu NQR", "fuel_type": "diesel", "fuel_consumption": 16, "max_weight": 4500, "max_height": 320,
+     "max_width": 220, "max_length": 550},
+    {"name": "TATA LPT 613", "fuel_type": "diesel", "fuel_consumption": 15, "max_weight": 3500, "max_height": 300,
+     "max_width": 210, "max_length": 500},
+    {"name": "Iveco Eurocargo", "fuel_type": "diesel", "fuel_consumption": 17, "max_weight": 6000, "max_height": 340,
+     "max_width": 230, "max_length": 650},
+    {"name": "Hyundai Mighty", "fuel_type": "diesel", "fuel_consumption": 14, "max_weight": 3000, "max_height": 290,
+     "max_width": 200, "max_length": 480},
+    {"name": "Mercedes-Benz Sprinter", "fuel_type": "diesel", "fuel_consumption": 11, "max_weight": 2000,
+     "max_height": 270, "max_width": 175, "max_length": 330},
+    {"name": "Volkswagen Crafter", "fuel_type": "diesel", "fuel_consumption": 10, "max_weight": 1800, "max_height": 260,
+     "max_width": 170, "max_length": 320},
+    {"name": "Ford Transit", "fuel_type": "gasoline", "fuel_consumption": 12, "max_weight": 1500, "max_height": 250,
+     "max_width": 170, "max_length": 300},
+    {"name": "Renault Master", "fuel_type": "diesel", "fuel_consumption": 9, "max_weight": 1600, "max_height": 255,
+     "max_width": 170, "max_length": 310},
+    {"name": "Fiat Ducato", "fuel_type": "diesel", "fuel_consumption": 10, "max_weight": 1700, "max_height": 260,
+     "max_width": 175, "max_length": 315},
+    {"name": "Renault Kangoo Z.E.", "fuel_type": "electric", "fuel_consumption": 18, "max_weight": 650,
+     "max_height": 180, "max_width": 150, "max_length": 220},
+    {"name": "Nissan e-NV200", "fuel_type": "electric", "fuel_consumption": 20, "max_weight": 700, "max_height": 185,
+     "max_width": 150, "max_length": 210},
+    {"name": "Ford E-Transit", "fuel_type": "electric", "fuel_consumption": 25, "max_weight": 1200, "max_height": 250,
+     "max_width": 170, "max_length": 300},
+    {"name": "Peugeot e-Expert", "fuel_type": "electric", "fuel_consumption": 22, "max_weight": 1000, "max_height": 190,
+     "max_width": 160, "max_length": 250},
+    {"name": "Mercedes-Benz eSprinter", "fuel_type": "electric", "fuel_consumption": 35, "max_weight": 1000,
+     "max_height": 260, "max_width": 170, "max_length": 320}
 ]
 
 LVIV_PRODUCTS = [
@@ -152,6 +172,7 @@ LVIV_PRODUCTS = [
     {"name": "Рулетка 5м (короб)", "weight": 3000, "h": 15, "w": 25, "l": 30, "cat": "build"}
 ]
 
+
 def clear_before_seed(headers):
     for endpoint in ["arrivals", "requests", "sku", "products", "vehicles", "delivery-points", "employees", "clients"]:
         resp = requests.get(f"{BASE_URL}/{endpoint}", headers=headers, params={"limit": 1000})
@@ -165,6 +186,7 @@ def clear_before_seed(headers):
                             requests.delete(f"{BASE_URL}/{endpoint}/{item.get('id')}", headers=headers)
     print("Database cleared.")
 
+
 def seed_requests(headers, product_ids, point_ids):
     req_count = 0
     configs = [
@@ -172,7 +194,7 @@ def seed_requests(headers, product_ids, point_ids):
         ("high", FAKEDATA_HIGH_REQUESTS_COUNT),
         ("default", FAKEDATA_DEFAULT_REQUESTS_COUNT)
     ]
-    
+
     for level, count in configs:
         for _ in range(count):
             payload = {
@@ -184,39 +206,61 @@ def seed_requests(headers, product_ids, point_ids):
             res = requests.post(f"{BASE_URL}/requests", json=payload, headers=headers)
             if res.status_code in (200, 201):
                 req_count += 1
-    print(f"Total Requests generated: {req_count} (Critical: {FAKEDATA_CRITICAL_REQUESTS_COUNT}, High: {FAKEDATA_HIGH_REQUESTS_COUNT}, Default: {FAKEDATA_DEFAULT_REQUESTS_COUNT}).")
+    print(
+        f"Total Requests generated: {req_count} (Critical: {FAKEDATA_CRITICAL_REQUESTS_COUNT}, High: {FAKEDATA_HIGH_REQUESTS_COUNT}, Default: {FAKEDATA_DEFAULT_REQUESTS_COUNT}).")
+
 
 def seed_arrivals(headers, vehicle_ids, driver_ids):
     arrival_count = 0
     if not vehicle_ids or not driver_ids:
         return
+    used_combos = set()  # (driver_id, transport_id, time_to_arrival)
+    max_retries = 20  # attempts per arrival before giving up
+
     for i in range(FAKEDATA_ARRIVALS_COUNT):
-        arrival_time = (datetime.now(timezone.utc) + timedelta(days=random.randint(1, 10), hours=random.randint(0, 23))).strftime("%Y-%m-%dT%H:%M:%SZ")
-        payload = {
-            "transport_id": random.choice(vehicle_ids),
-            "driver_id": random.choice(driver_ids),
-            "time_to_arrival": arrival_time
-        }
-        res = requests.post(f"{BASE_URL}/arrivals", json=payload, headers=headers)
-        if res.status_code in (200, 201):
-            arrival_count += 1
+        generated = False
+        for _ in range(max_retries):
+            arrival_time = (
+                    datetime.now(timezone.utc)
+                    + timedelta(days=random.randint(1, 10), hours=random.randint(0, 23))
+            ).strftime("%Y-%m-%dT%H:%M:%SZ")
+            transport_id = random.choice(vehicle_ids)
+            driver_id = random.choice(driver_ids)
+            combo = (driver_id, transport_id, arrival_time)
+            if combo in used_combos:
+                continue  # collision – pick again
+            used_combos.add(combo)
+            payload = {
+                "transport_id": transport_id,
+                "driver_id": driver_id,
+                "time_to_arrival": arrival_time
+            }
+            res = requests.post(f"{BASE_URL}/arrivals", json=payload, headers=headers)
+            if res.status_code in (200, 201):
+                arrival_count += 1
+            generated = True
+            break
+        if not generated:
+            print(f"  Warning: could not find unique combo for arrival #{i + 1}, skipping.")
     print(f"Arrivals generated: {arrival_count}.")
+
 
 def run_setup():
     login_data = {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
     login_resp = requests.post(f"{BASE_URL}/login", json=login_data)
-    
+
     if login_resp.status_code != 200:
         print("Login error!")
         return
-    
+
     token = login_resp.json().get("token")
     headers = {"Authorization": f"Bearer {token}"}
     print("Authorization successful.")
 
     clear_before_seed(headers)
 
-    dist = {"logistician": FAKEDATA_LOGISTICIAN_COUNT, "driver": FAKEDATA_DRIVER_COUNT, "warehouse_manager": FAKEDATA_MANAGER_COUNT}
+    dist = {"logistician": FAKEDATA_LOGISTICIAN_COUNT, "driver": FAKEDATA_DRIVER_COUNT,
+            "warehouse_manager": FAKEDATA_MANAGER_COUNT}
     emp_count = 0
     driver_ids = []
     for role, count in dist.items():
@@ -247,7 +291,7 @@ def run_setup():
         if res.status_code in (200, 201):
             client_id = res.json().get("id")
             saved_clients.append({"id": client_id, "name": name})
-            
+
     print(f"Clients generated: {len(saved_clients) - 1}.")
 
     main_owner_id = saved_clients[0]["id"]
@@ -287,7 +331,7 @@ def run_setup():
     for cli in saved_clients[1:]:
         for i in range(2):
             payload = {
-                "name": f"Філія {cli['name']} #{i+1}",
+                "name": f"Філія {cli['name']} #{i + 1}",
                 "address": random.choice(LVIV_STREETS),
                 "owner_id": cli["id"],
                 "type": "client_point"
@@ -302,7 +346,7 @@ def run_setup():
     vehicle_count = 0
     vehicle_ids = []
     warehouse_addresses = [wh["address"] for wh in LVIV_WAREHOUSES]
-    
+
     for v in LVIV_VEHICLES:
         for i in range(1, 3):
             payload = {
@@ -334,7 +378,7 @@ def run_setup():
             "length": prod["l"]
         }
         res = requests.post(f"{BASE_URL}/products", json=payload, headers=headers)
-        
+
         if res.status_code in (200, 201):
             prod_count += 1
             p_id = res.json().get("id")
@@ -344,7 +388,7 @@ def run_setup():
             valid_destinations = []
             for point in our_logistics_points:
                 name = point["name"]
-                
+
                 if cat == "tech" and ("Епіцентр" in name or "Захід" in name or "Рясне" in name):
                     valid_destinations.append(point["id"])
                 elif cat in ["food", "drinks"] and ("Холод" in name or "МЕТРО" in name or "Сихів" in name):
@@ -361,18 +405,18 @@ def run_setup():
                     sku_res = requests.post(f"{BASE_URL}/sku", json=sku_payload, headers=headers)
                     if sku_res.status_code in (200, 201):
                         sku_count += 1
-                        
+
     print(f"Products generated: {prod_count}.")
     print(f"SKUs generated: {sku_count}.")
-    
-    
+
     if all_product_ids and points_eligible_for_requests:
         seed_requests(headers, all_product_ids, points_eligible_for_requests)
-        
+
     if vehicle_ids and driver_ids:
         seed_arrivals(headers, vehicle_ids, driver_ids)
-        
+
     print("Database successfully seeded with data.")
+
 
 if __name__ == "__main__":
     run_setup()
