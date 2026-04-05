@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
+import { LoadingSpinner } from '../components/Shared/LoadingSpinner';
 import { Header } from '../components/Shared/Header';
 import { EmployeeModal } from '../components/Admin/EmployeeModal';
+import { ClientModal } from '../components/Admin/ClientModal';
 import {
   getEmployees,
   createEmployee,
   patchEmployee,
   deleteEmployee,
+  createClient,
 } from '../services/api';
 import type { ApiEmployee, ApiEmployeeRole, UIEmployee as Employee } from '../types/api';
 import './AdminPage.css';
@@ -43,6 +46,7 @@ export function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [selected, setSelected] = useState<Employee | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -117,26 +121,40 @@ export function AdminPage() {
     }
   };
 
+  const handleClientSave = async (clientData: { name: string; email: string; phone: string; password?: string }) => {
+    setSaving(true);
+    try {
+      await createClient({
+        name: clientData.name,
+        email: clientData.email,
+        phone: clientData.phone,
+        password: clientData.password || 'TemporaryPassword123!',
+      });
+      // (Optional) load Clients if we had a table for it, for now just close
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Failed to create client');
+    } finally {
+      setSaving(false);
+      setIsClientModalOpen(false);
+    }
+  };
 
   if (loading) {
-    return (
-      <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', background: '#0f172a', minHeight: '100vh' }}>
-        <Header title="Admin Dashboard" />
-        <div style={{ marginTop: '100px' }}>
-          <div className="spinner" style={{ margin: '0 auto 20px' }} />
-          <h3>Loading Admin Data...</h3>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading Admin Data..." />;
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="admin-dashboard-container">
       <Header title="Admin Dashboard">
-        <button className="btn-primary" onClick={handleHireClick}>
-          Create new worker
-        </button>
+        <div className="header-actions">
+          <button className="btn-secondary" onClick={() => setIsClientModalOpen(true)}>
+            Create new client
+          </button>
+          <button className="btn-primary" onClick={handleHireClick}>
+            Create new worker
+          </button>
+        </div>
       </Header>
 
       {apiError && (
@@ -199,6 +217,12 @@ export function AdminPage() {
         onClose={handleClose}
         onSave={handleSave}
         onDelete={handleDelete}
+      />
+      
+      <ClientModal
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
+        onSave={handleClientSave}
       />
     </div>
   );

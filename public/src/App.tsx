@@ -1,5 +1,5 @@
-import { useRef, MouseEvent } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useRef, MouseEvent, type ReactNode } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LoginMenu } from './components/LoginMenu';
 import { AdminPage } from './pages/AdminPage';
 import { LogistPage } from './pages/LogistPage';
@@ -8,6 +8,21 @@ import { WarehousePage } from './pages/WarehousePage';
 import { TestApiPage } from './pages/TestApiPage';
 import './index.css';
 
+// ── Role-based route guard ────────────────────────────────────────────────────
+function ProtectedRoute({ roles, children }: { roles: string[]; children: ReactNode }) {
+  const raw = localStorage.getItem('currentUser');
+  const user = raw
+    ? (() => { try { return JSON.parse(raw); } catch { return null; } })()
+    : null;
+  const role: string = user?.role ?? '';
+
+  if (!role || !roles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
+// ── App shell ─────────────────────────────────────────────────────────────────
 function AppInner() {
   const containerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -46,11 +61,46 @@ function AppInner() {
               </div>
             }
           />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/logist" element={<LogistPage />} />
-          <Route path="/driver" element={<DriverPage />} />
-          <Route path="/warehouse" element={<WarehousePage />} />
-          <Route path="/testapi" element={<TestApiPage />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/logist"
+            element={
+              <ProtectedRoute roles={['logistician', 'admin']}>
+                <LogistPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/driver"
+            element={
+              <ProtectedRoute roles={['driver', 'admin']}>
+                <DriverPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/warehouse"
+            element={
+              <ProtectedRoute roles={['warehouse_manager', 'admin']}>
+                <WarehousePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/testapi"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <TestApiPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
     </div>

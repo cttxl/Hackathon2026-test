@@ -42,6 +42,10 @@ export function EmployeeModal({ employee, isOpen, onClose, onSave, onDelete }: E
       setError('Passwords do not match');
       return;
     }
+    if (formData.phone && !formData.phone.startsWith('+')) {
+      setError('Phone number must start with + (e.g. +380...)');
+      return;
+    }
     onSave(formData as Employee, password || undefined);
   };
 
@@ -72,10 +76,11 @@ export function EmployeeModal({ employee, isOpen, onClose, onSave, onDelete }: E
           </div>
 
           <div className="input-group">
-            <label>Phone</label>
+            <label>Phone (must start with +)</label>
             <input
               type="text"
               required
+              placeholder="+380991234567"
               value={formData.phone || ''}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />

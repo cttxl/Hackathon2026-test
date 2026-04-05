@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { LoadingSpinner } from '../components/Shared/LoadingSpinner';
 import { Header } from '../components/Shared/Header';
 import { MapWidget } from '../components/Shared/MapWidget';
 import { getArrivals, getVehicles, patchArrival, getDeliveryPoints, getArrivalRequests, getRequests, patchRequest } from '../services/api';
@@ -172,15 +173,7 @@ export function DriverPage() {
   )) : [];
 
   if (loading) {
-    return (
-      <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', background: '#0f172a', minHeight: '100vh' }}>
-        <Header title="Driver Dashboard" />
-        <div style={{ marginTop: '100px' }}>
-          <div className="spinner" style={{ margin: '0 auto 20px' }} />
-          <h3>Loading Driver Schedule...</h3>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading Driver Schedule..." />;
   }
 
   return (

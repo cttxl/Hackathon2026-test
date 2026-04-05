@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { LoadingSpinner } from '../components/Shared/LoadingSpinner';
 import { Header } from '../components/Shared/Header';
 import { MapWidget } from '../components/Shared/MapWidget';
 import { OrderList } from '../components/Logist/OrderList';
@@ -298,15 +299,7 @@ export function LogistPage() {
 
 
   if (loading) {
-    return (
-      <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', background: '#0f172a', minHeight: '100vh' }}>
-        <Header title="Logist Dashboard" />
-        <div style={{ marginTop: '100px' }}>
-          <div className="spinner" style={{ margin: '0 auto 20px' }} />
-          <h3>Loading Logistics Data...</h3>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading Logistics Data..." />;
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -363,7 +356,7 @@ export function LogistPage() {
           {/* Right — Orders */}
           <div className="orders-panel">
             <div className="panel-header">
-              <h3 className="panel-title">Active Orders</h3>
+              <h3 className="panel-title">Active Arrivals</h3>
               <button className="btn-primary" onClick={handleAddOrderClick}>
                 Add Order
               </button>

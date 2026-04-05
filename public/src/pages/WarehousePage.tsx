@@ -1,4 +1,5 @@
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import { LoadingSpinner } from '../components/Shared/LoadingSpinner';
 import { Header } from '../components/Shared/Header';
 import { WarehouseSelector } from '../components/Warehouse/WarehouseSelector';
 import { InventoryList } from '../components/Warehouse/InventoryList';
@@ -105,15 +106,7 @@ export function WarehousePage() {
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8', background: '#0f172a', minHeight: '100vh' }}>
-        <Header title="Warehouse Dashboard" />
-        <div style={{ marginTop: '100px' }}>
-          <div className="spinner" style={{ margin: '0 auto 20px' }} />
-          <h3>Loading Warehouse Data...</h3>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading Warehouse Data..." />;
   }
 
   return (

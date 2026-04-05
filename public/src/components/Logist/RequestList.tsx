@@ -20,9 +20,9 @@ const STATUS_CLASSES: Record<string, string> = {
   cancelled: 'badge-canceled',
 };
 
-export function RequestList({ 
-  requests, 
-  products, 
+export function RequestList({
+  requests,
+  products,
   deliveryPoints,
   arrivalRequests,
   arrivals,
@@ -77,7 +77,7 @@ export function RequestList({
       {sortedArrivalIds.map(aid => {
         const groupRequests = groups[aid];
         const arrival = arrivals.find(a => a.id === aid);
-        
+
         return (
           <div key={aid} className="request-group">
             <div className="group-header">
@@ -94,7 +94,7 @@ export function RequestList({
                 <span className="group-title" style={{ opacity: 0.7 }}>Unassigned Requests</span>
               )}
             </div>
-            
+
             <div className="group-content">
               {groupRequests.map(req => {
                 const statusKey = req.status?.toLowerCase() || 'pending';
@@ -105,19 +105,23 @@ export function RequestList({
 
                 const emergencyClass = req.emergency === 'critical' ? 'order-card-critical' : (req.emergency === 'high' ? 'order-card-high' : '');
                 const emergencyBadge = req.emergency === 'critical' ? (
-                  <span className="emergency-badge badge-critical">CRITICAL</span>
+                  <span className="emergency-badge badge-critical" style={{ marginLeft: 0 }}>CRITICAL</span>
                 ) : (req.emergency === 'high' ? (
-                  <span className="emergency-badge badge-high">HIGH</span>
+                  <span className="emergency-badge badge-high" style={{ marginLeft: 0 }}>HIGH</span>
                 ) : null);
 
                 return (
-                  <div key={req.id || Math.random().toString()} className={`order-card ${emergencyClass}`}>
-                    <div className="order-info">
-                      <span className="order-title">
-                        {productName}
-                        {emergencyBadge}
-                        <span style={{ opacity: 0.5, fontWeight: 400 }}> | {req.quantity} units</span>
-                      </span>
+                  <div key={req.id || Math.random().toString()} className={`order-card ${emergencyClass}`} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="order-info" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div className="order-title" style={{ display: 'flex', flexDirection: 'column', gap: '6px', lineHeight: '1.2' }}>
+                        <span>{productName}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {emergencyBadge}
+                          <span style={{ opacity: 0.5, fontWeight: 400, whiteSpace: 'nowrap' }}>
+                            {emergencyBadge ? '| ' : ''}{req.quantity} units
+                          </span>
+                        </div>
+                      </div>
 
                       <span className="order-sub">
                         To: <strong style={{ color: '#e2e8f0' }}>{dpName}</strong>
@@ -127,12 +131,12 @@ export function RequestList({
                         ID: #{req.id?.slice(0, 8) ?? 'N/A'}
                       </span>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '8px' }}>
                         <span className={`status-badge ${badgeClass}`}>{req.status}</span>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           {aid !== 'unassigned' && onUnlink && (
-                            <button 
-                              className="btn-unlink" 
+                            <button
+                              className="btn-unlink"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onUnlink(req.id);
@@ -143,8 +147,8 @@ export function RequestList({
                             </button>
                           )}
                           {onRebase && (
-                            <button 
-                              className="btn-rebase" 
+                            <button
+                              className="btn-rebase"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onRebase(req.id);

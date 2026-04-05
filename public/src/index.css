@@ -131,3 +131,28 @@ html, body, #root {
   color: #94a3b8;
   margin-left: 4px;
 }
+
+/* ── Responsive global overrides ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  html, body, #root {
+    overflow: auto;  /* allow page-level scroll on mobile */
+  }
+
+  .app-main {
+    overflow: auto;
+  }
+
+  .brand-title {
+    font-size: 28px;
+  }
+
+  .app-container {
+    /* disable the mouse-glow on touch devices */
+    background: radial-gradient(
+      600px circle at 50% 20%,
+      rgba(56, 189, 248, 0.10),
+      transparent 50%
+    );
+  }
+}
+

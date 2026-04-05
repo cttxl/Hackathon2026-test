@@ -1,234 +1,309 @@
-import { useState, useEffect } from "react";
-import "./TestApiPage.css";
+import { useState, useEffect, useCallback } from 'react';
+import './TestApiPage.css';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
-
-type UserInfo = {
-  id: string;
-  type: string;
-  role: string;
-};
+const TABS = [
+  { id: 'employees', label: 'Employees', icon: '👤' },
+  { id: 'clients', label: 'Clients', icon: '🏢' },
+  { id: 'delivery-points', label: 'Points', icon: '📍' },
+  { id: 'products', label: 'Products', icon: '📦' },
+  { id: 'sku', label: 'SKU (Stock)', icon: '🏷️' },
+  { id: 'requests', label: 'Requests', icon: '📝' },
+  { id: 'vehicles', label: 'Vehicles', icon: '🚛' },
+  { id: 'arrivals', label: 'Arrivals (Orders)', icon: '📅' },
+  { id: 'arrivals-requests', label: 'Order Items', icon: '🔗' },
+];
 
 export function TestApiPage() {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<UserInfo | null>(null);
-  
-  const [email, setEmail] = useState("admin@admin.com");
-  const [password, setPassword] = useState("1111");
+  const [activeTab, setActiveTab] = useState('employees');
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [dbData, setDbData] = useState<any>(null);
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState({ loading: false, error: '', success: '' });
 
-  const [activeTab, setActiveTab] = useState("employees");
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-  // Form states for creation
-  const [formData, setFormData] = useState<any>({});
-
-  const tabs = [
-    "employees", "clients", "delivery-points", "products", "sku", 
-    "requests", "arrivals", "arrivals-requests", "arrivals-requests/recommended", "vehicles"
-  ];
-
-  /* ---------------------------------
-   * API CALLS
-   * --------------------------------- */
-  const login = async () => {
+  const fetchData = useCallback(async () => {
+    if (!token) return;
+    setStatus(s => ({ ...s, loading: true, error: '', success: '' }));
     try {
-      const res = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const json = await res.json();
-      if (res.ok) {
-        setToken(json.token);
-        setUser(json.user);
-      } else {
-        alert("Login failed: " + JSON.stringify(json));
-      }
-    } catch (err) {
-      alert("Error: " + err);
-    }
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    setData(null);
-  };
-
-  const fetchList = async (resource: string) => {
-    setLoading(true);
-    try {
-      const headers: any = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const res = await fetch(`${API_URL}/${resource}`, { headers });
-      const json = await res.json();
-      setData(json);
-    } catch (err) {
-      console.error(err);
-      setData({ error: String(err) });
-    }
-    setLoading(false);
-  };
-
-  const createItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const headers: any = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const formattedData = { ...formData };
-      
-      const numberFields = ["weight", "height", "width", "length", "quantity", "fuel_consumption", "max_weight", "max_height", "max_width", "max_length", "priority"];
-      
-      for (const k in formattedData) {
-        if (numberFields.includes(k) && formattedData[k] !== "") {
-          formattedData[k] = Number(formattedData[k]);
+      const res = await fetch(`${apiBase}/${activeTab}?limit=100`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
         }
-      }
-
-      const res = await fetch(`${API_URL}/${activeTab}`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(formattedData)
       });
+      
       const json = await res.json();
-      if (res.ok) {
-        alert("Created successfully!");
-        setFormData({});
-        fetchList(activeTab);
-      } else {
-        alert("Creation failed: " + JSON.stringify(json));
+      
+      if (!res.ok) {
+        throw new Error(json.error || `Error ${res.status}: ${res.statusText}`);
       }
+      
+      setDbData(json);
     } catch (err) {
-      alert("Error: " + err);
+      console.error('Fetch error:', err);
+      setStatus(s => ({ ...s, error: err instanceof Error ? err.message : 'Failed to fetch data' }));
+      setDbData(null);
+    } finally {
+      setStatus(s => ({ ...s, loading: false }));
     }
-  };
+  }, [activeTab, token, apiBase]);
 
   useEffect(() => {
-    fetchList(activeTab);
-    setFormData({});
-  }, [activeTab, token]);
+    if (token) fetchData();
+  }, [fetchData, token]);
 
-  /* ---------------------------------
-   * DYNAMIC FORM BUILDER
-   * --------------------------------- */
-  const getFormFields = () => {
-    switch (activeTab) {
-      case "employees": return ["fullname", "email", "password", "phone", "role"];
-      case "clients": return ["name", "email", "password", "phone"];
-      case "products": return ["name", "weight", "height", "width", "length"];
-      case "delivery-points": return ["name", "address", "owner_id", "type", "height", "width", "length"];
-      case "sku": return ["product_id", "delivery_point_id"];
-      case "requests": return ["product_id", "quantity", "delivery_point_id", "emergency"];
-      case "vehicles": return ["name", "fuel_type", "fuel_consumption", "max_weight", "max_height", "max_width", "max_length", "address"];
-      default: return [];
+  const handleQuickLogin = async () => {
+    setStatus(s => ({ ...s, loading: true, error: '', success: '' }));
+    try {
+      const res = await fetch(`${apiBase}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'admin@admin.com', password: '1111' })
+      });
+      const json = await res.json();
+      if (res.ok && json.token) {
+        setToken(json.token);
+        localStorage.setItem('token', json.token);
+        localStorage.setItem('currentUser', JSON.stringify(json.user));
+        setStatus(s => ({ ...s, success: 'Logged in as Admin!' }));
+      } else {
+        throw new Error(json.error || 'Login failed');
+      }
+    } catch (err) {
+      setStatus(s => ({ ...s, error: err instanceof Error ? err.message : 'Login failed' }));
+    } finally {
+      setStatus(s => ({ ...s, loading: false }));
     }
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus(s => ({ ...s, loading: true, error: '', success: '' }));
+    try {
+      const res = await fetch(`${apiBase}/${activeTab}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      const json = await res.json();
+      
+      if (res.ok) {
+        setStatus(s => ({ ...s, success: 'Record created successfully!' }));
+        setFormData({});
+        fetchData();
+      } else {
+        throw new Error(json.error || json.message || `Creation failed (${res.status})`);
+      }
+    } catch (err) {
+      setStatus(s => ({ ...s, error: err instanceof Error ? err.message : 'Network error' }));
+    } finally {
+      setStatus(s => ({ ...s, loading: false }));
+    }
+  };
+
+  const getFieldsForTab = (tab: string) => {
+    switch (tab) {
+      case 'employees':
+        return [
+          { name: 'fullname', placeholder: 'John Doe' },
+          { name: 'email', placeholder: 'john@example.com' },
+          { name: 'password', placeholder: 'password123' },
+          { name: 'phone', placeholder: '+380991234567 (must start with +)' },
+          { name: 'role', placeholder: 'admin, logistician, driver, or warehouse_manager' },
+        ];
+      case 'clients':
+        return [
+          { name: 'name', placeholder: 'Acme Corp' },
+          { name: 'email', placeholder: 'contact@acme.com' },
+          { name: 'password', placeholder: 'password123' },
+          { name: 'phone', placeholder: '+380...' },
+        ];
+      case 'delivery-points':
+        return [
+          { name: 'name', placeholder: 'Lviv Warehouse A' },
+          { name: 'address', placeholder: 'vul. Naukova, 7' },
+          { name: 'owner_id', placeholder: 'UUID of client or admin' },
+          { name: 'type', placeholder: 'warehouse, provider, or client_point' },
+          { name: 'height', placeholder: '600 (Optional)' },
+          { name: 'width', placeholder: '2000 (Optional)' },
+          { name: 'length', placeholder: '5000 (Optional)' },
+        ];
+      case 'products':
+        return [
+          { name: 'name', placeholder: 'Product Name' },
+          { name: 'weight', placeholder: '3000' },
+          { name: 'height', placeholder: '30' },
+          { name: 'width', placeholder: '20' },
+          { name: 'length', placeholder: '10' },
+        ];
+      case 'sku':
+        return [
+          { name: 'product_id', placeholder: 'UUID' },
+          { name: 'delivery_point_id', placeholder: 'UUID' },
+        ];
+      case 'requests':
+        return [
+          { name: 'product_id', placeholder: 'UUID' },
+          { name: 'delivery_point_id', placeholder: 'UUID' },
+          { name: 'quantity', placeholder: '5' },
+          { name: 'emergency', placeholder: 'critical, high, or default' },
+        ];
+      case 'vehicles':
+        return [
+          { name: 'name', placeholder: 'Volvo FH16' },
+          { name: 'fuel_type', placeholder: 'diesel, gasoline, or electric' },
+          { name: 'fuel_consumption', placeholder: '32' },
+          { name: 'max_weight', placeholder: '22000' },
+          { name: 'max_height', placeholder: '400' },
+          { name: 'max_width', placeholder: '250' },
+          { name: 'max_length', placeholder: '1360' },
+          { name: 'address', placeholder: 'Current location address' },
+        ];
+      case 'arrivals':
+        return [
+          { name: 'transport_id', placeholder: 'UUID' },
+          { name: 'driver_id', placeholder: 'UUID' },
+          { name: 'time_to_arrival', placeholder: '2026-04-10T14:00:00Z' },
+        ];
+      case 'arrivals-requests':
+        return [
+          { name: 'arrival_id', placeholder: 'UUID' },
+          { name: 'request_id', placeholder: 'UUID' },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const fields = getFieldsForTab(activeTab);
+
   return (
-    <div className="test-api-wrapper">
-      <div className="layout">
-        {/* SIDEBAR */}
-        <aside className="sidebar glass">
-          <div className="brand">
-            ✨ NexusUI
+    <div className="api-dashboard-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ fontSize: '28px', margin: 0, background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          API Debugger Dashboard
+        </h2>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+             <span className={`api-status-badge ${status.success ? 'success' : status.error ? 'error' : ''}`} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {status.loading ? '⏳ Processing...' : status.success ? '✅ ' + status.success : status.error ? '❌ ' + status.error : 'Ready'}
+             </span>
+             <button className="api-menu-btn" onClick={() => { localStorage.removeItem('token'); setToken(''); setDbData(null); }} style={{ color: '#ef4444' }}>Logout</button>
+        </div>
+      </div>
+
+      <div className="api-layout">
+        {/* Sidebar */}
+        <div className="api-menu-panel">
+          <div className="sidebar-identity">
+             <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', fontWeight: 700 }}>SESSION CONTROL</div>
+             <button 
+               className="api-menu-btn active" 
+               onClick={handleQuickLogin}
+               style={{ width: '100%', marginBottom: '12px', textAlign: 'center', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff' }}
+             >
+               ⚡ Login as Admin
+             </button>
+             
+             <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>JWT TOKEN</div>
+             <input 
+               type="text" 
+               className="api-token-input" 
+               value={token} 
+               onChange={(e) => { setToken(e.target.value); localStorage.setItem('token', e.target.value); }}
+               placeholder="No token active..."
+               style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: '#38bdf8', fontSize: '10px', fontFamily: 'monospace' }}
+             />
           </div>
 
-          <div className="auth-panel glass panel">
-            {user ? (
-              <>
-                <div>
-                  <div style={{ marginBottom: "0.5rem" }}>
-                    <span className="badge">Authenticated</span>
-                  </div>
-                  <div className="user-snippet">
-                    <div><strong>ID:</strong> {user.id.substring(0,8)}...</div>
-                    <div><strong>Type:</strong> {user.type}</div>
-                    {user.role && <div><strong>Role:</strong> {user.role}</div>}
-                  </div>
-                </div>
-                <button className="btn btn-secondary" onClick={logout}>Sign Out</button>
-              </>
-            ) : (
-              <>
-                <h3>Admin Identity</h3>
-                <input 
-                  className="input-field" 
-                  placeholder="Email" 
-                  value={email}
-                  onChange={e => setEmail(e.target.value)} 
-                />
-                <input 
-                  className="input-field" 
-                  type="password" 
-                  placeholder="Password" 
-                  value={password}
-                  onChange={e => setPassword(e.target.value)} 
-                />
-                <button className="btn" onClick={login}>Authenticate</button>
-              </>
-            )}
-          </div>
-
-          <div className="nav-menu">
-            <h3 style={{ marginLeft: "1rem", marginBottom: "0.5rem", fontSize: "0.85rem", textTransform: "uppercase", color: "var(--test-api-text-muted)"}}>
-              Endpoints
-            </h3>
-            {tabs.map((t) => (
-              <button 
-                key={t}
-                className={`nav-item ${activeTab === t ? "active" : ""}`}
-                onClick={() => setActiveTab(t)}
+          <h3>Endpoints</h3>
+          <div className="api-menu-list">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                className={`api-menu-btn ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => { setActiveTab(tab.id); setFormData({}); setStatus({ loading: false, error: '', success: '' }); }}
               >
-                /{t}
+                <span style={{ marginRight: '8px' }}>{tab.icon}</span> {tab.label}
               </button>
             ))}
           </div>
-        </aside>
+        </div>
 
-        {/* MAIN CONTENT */}
-        <main className="main-content">
-          <header className="status-bar glass">
-            <h2>Endpoint Preview: <span style={{ color: "var(--test-api-accent-color)" }}>/{activeTab}</span></h2>
-            <button className="btn btn-secondary" onClick={() => fetchList(activeTab)}>
-              {loading ? "Refreshing..." : "↻ Refresh Data"}
-            </button>
-          </header>
-
-          <div className="grid-content">
-            <div className="panel glass" style={{ gridColumn: getFormFields().length > 0 ? "1" : "1 / 3" }}>
-              <h3>Response Inspector</h3>
-              <pre className="json-viewer">
-                {JSON.stringify(data, null, 2)}
-              </pre>
-            </div>
-
-            {getFormFields().length > 0 && (
-              <div className="panel glass">
-                <h3>Create Record</h3>
-                <form onSubmit={createItem} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
-                  <div className="form-grid">
-                    {getFormFields().map((field) => (
-                      <input
-                        key={field}
-                        className="input-field"
-                        placeholder={field}
-                        value={formData[field] || ""}
-                        onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                        required={field !== "emergency"} // simple workaround
-                      />
-                    ))}
+        {/* Content */}
+        <div className="api-content-layout">
+          {/* Creation Panel */}
+          <div className="api-content-panel">
+            <h3 className="title-light">Create New <span>{activeTab.replace('-', ' ')}</span></h3>
+            <form onSubmit={handleCreate}>
+              <div className="api-form-grid">
+                {fields.map(field => (
+                  <div key={field.name} className="api-input-group">
+                    <label>{field.name.replace('_', ' ')}</label>
+                    <input
+                      type="text"
+                      placeholder={field.placeholder}
+                      value={formData[field.name] || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, [field.name]: e.target.value }))}
+                      required={!['height', 'width', 'length'].includes(field.name)}
+                    />
                   </div>
-                  <div style={{ marginTop: 'auto' }}>
-                    <button type="submit" className="btn" style={{ width: '100%' }}>Make POST request</button>
-                  </div>
-                </form>
+                ))}
               </div>
-            )}
+              <div className="api-form-actions">
+                <button type="submit" className="api-menu-btn active" style={{ padding: '12px 40px', fontWeight: 700 }} disabled={status.loading || !token}>
+                  {status.loading ? 'Creating...' : '+ Create Record'}
+                </button>
+              </div>
+            </form>
           </div>
-        </main>
+
+          {/* Data Explorer */}
+          <div className="api-content-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+               <h3 style={{ margin: 0 }}>Database Explorer</h3>
+               <button className="api-menu-btn" onClick={fetchData} disabled={!token} style={{ fontSize: '12px', background: 'rgba(255,255,255,0.05)' }}>🔄 Refresh Data</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '20px' }}>
+               <div style={{ overflowX: 'auto' }}>
+                  <pre className="api-json-viewer">
+                    {dbData ? JSON.stringify(dbData, null, 2) : !token ? 'Please login to view data.' : 'No data loaded.'}
+                  </pre>
+               </div>
+               
+               <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '12px', padding: '16px' }}>
+                  <h4 style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '1px' }}>Quick Details</h4>
+                  {dbData?.data && Array.isArray(dbData.data) && (
+                    <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                       {dbData.data.slice(0, 8).map((item: any) => (
+                         <li key={item.id} style={{ fontSize: '13px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                            <div style={{ color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name || item.fullname || item.id.slice(0, 8)}</div>
+                            <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '2px' }}>{item.email || item.address || item.role || item.status || 'Active Record'}</div>
+                         </li>
+                       ))}
+                       {dbData.data.length > 8 && (
+                         <div style={{ textAlign: 'center', fontSize: '12px', color: '#38bdf8', marginTop: '10px', fontWeight: 600 }}>
+                            + {dbData.data.length - 8} more items...
+                         </div>
+                       )}
+                       {dbData.data.length === 0 && (
+                         <div style={{ textAlign: 'center', color: '#475569', fontSize: '13px', padding: '20px 0' }}>Table is empty</div>
+                       )}
+                    </ul>
+                  )}
+                  {!dbData?.data && token && (
+                    <div style={{ textAlign: 'center', color: '#475569', fontSize: '13px', padding: '20px 0' }}>Load data to see summary</div>
+                  )}
+               </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

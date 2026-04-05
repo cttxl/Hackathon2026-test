@@ -307,3 +307,49 @@
 .page-indicator strong {
   color: #2dd4bf;
 }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .warehouse-split-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .warehouse-dashboard-container {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .warehouse-dashboard-container {
+    padding: 16px;
+  }
+  
+  .warehouse-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .inventory-panel, .operations-panel {
+    padding: 16px;
+  }
+
+  .inventory-table th, .inventory-table td {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .operation-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .btn-action-teal {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

@@ -91,3 +91,29 @@
 .login-submit-btn:active {
   transform: translateY(0);
 }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .login-menu-glass {
+    width: 100%;
+    max-width: 100%;
+    padding: 32px 24px;
+    border-radius: 12px;
+    margin: 0 16px;
+  }
+
+  .login-title {
+    font-size: 22px;
+    margin-bottom: 24px;
+  }
+
+  .input-group input {
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+
+  .login-submit-btn {
+    font-size: 15px;
+    padding: 12px;
+  }
+}

@@ -383,3 +383,54 @@
   color: #ffffff;
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .logist-split-layout {
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .logist-top-row {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  .map-panel {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .logist-split-layout {
+    padding: 16px;
+  }
+  
+  .panel-title {
+    font-size: 18px;
+  }
+  
+  .group-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .orders-panel {
+    padding: 16px;
+  }
+  
+  .order-card {
+    padding: 14px 16px;
+  }
+  
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .panel-header .btn-primary, .panel-header .btn-secondary {
+    width: 100%;
+  }
+}
+

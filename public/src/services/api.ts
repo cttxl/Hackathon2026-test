@@ -52,12 +52,19 @@ async function apiFetch<T>(
   return body as T;
 }
 
-// ─── Auth ────────────────────────────────────────────────────────────────────
-
 export async function loginApi(email: string, password: string): Promise<ApiLoginResponse> {
   return apiFetch<ApiLoginResponse>('/login', {
     method: 'POST',
     body: JSON.stringify({ email, password } satisfies ApiLoginRequest),
+  });
+}
+
+// ─── Clients ─────────────────────────────────────────────────────────────────
+
+export async function createClient(data: { name: string, email: string, phone: string, password: string }): Promise<any> {
+  return apiFetch<any>('/clients', {
+    method: 'POST',
+    body: JSON.stringify(data),
   });
 }
 
