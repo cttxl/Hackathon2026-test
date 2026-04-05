@@ -21,14 +21,34 @@ func NewArrivalRequestRepository(db *sql.DB) *ArrivalRequestRepository {
 }
 
 func (r *ArrivalRequestRepository) Create(ctx context.Context, input domain.ArrivalRequestCreate) (domain.ArrivalRequest, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return domain.ArrivalRequest{}, err
+	}
+	defer tx.Rollback()
+
 	var ar domain.ArrivalRequest
-	err := r.db.QueryRowContext(ctx,
+	err = tx.QueryRowContext(ctx,
 		`INSERT INTO arrivals_requests (arrival_id, request_id, sku_ids, priority)
 		 VALUES ($1, $2, $3, $4)
 		 RETURNING id, arrival_id, request_id, sku_ids, priority, created_at, updated_at`,
 		input.ArrivalID, input.RequestID, pq.Array(input.SkuIDs), input.Priority,
 	).Scan(&ar.ID, &ar.ArrivalID, &ar.RequestID, pq.Array(&ar.SkuIDs), &ar.Priority, &ar.CreatedAt, &ar.UpdatedAt)
-	return ar, err
+
+	if err != nil {
+		return domain.ArrivalRequest{}, err
+	}
+
+	_, err = tx.ExecContext(ctx, `UPDATE requests SET status = 'accepted' WHERE id = $1`, input.RequestID)
+	if err != nil {
+		return domain.ArrivalRequest{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return domain.ArrivalRequest{}, err
+	}
+
+	return ar, nil
 }
 
 func (r *ArrivalRequestRepository) GetByID(ctx context.Context, id string) (domain.ArrivalRequest, error) {

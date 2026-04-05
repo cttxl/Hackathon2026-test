@@ -170,7 +170,7 @@ def seed_requests(headers, product_ids, point_ids):
         payload = {
             "product_id": random.choice(product_ids),
             "delivery_point_id": random.choice(point_ids),
-            "quantity": random.randint(1, 100),
+            "quantity": random.randint(1, 5),
             "emergency": emergency_levels[i % 3] 
         }
         res = requests.post(f"{BASE_URL}/requests", json=payload, headers=headers)

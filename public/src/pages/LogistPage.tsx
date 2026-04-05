@@ -3,8 +3,8 @@ import { Header } from '../components/Shared/Header';
 import { MapWidget } from '../components/Logist/MapWidget';
 import { OrderList } from '../components/Logist/OrderList';
 import { EditOrderModal } from '../components/Logist/EditOrderModal';
-import { PriorityModal } from '../components/Logist/PriorityModal';
 import { ProductsModal } from '../components/Logist/ProductsModal';
+import { RequestList } from '../components/Logist/RequestList';
 import {
   getArrivals,
   createArrival,
@@ -14,8 +14,11 @@ import {
   getDeliveryPoints,
   getProducts,
   getSkus,
+  getRequests,
+  getRecommendedArrivalRequests,
+  createArrivalRequest,
 } from '../services/api';
-import type { ApiArrival, ApiVehicle, ApiEmployee, ApiDeliveryPoint, ApiProduct, Order, OrderStatus } from '../types/api';
+import type { ApiArrival, ApiVehicle, ApiEmployee, ApiDeliveryPoint, ApiProduct, ApiRequest, Order, OrderStatus } from '../types/api';
 import './LogistPage.css';
 import './AdminPage.css';
 
@@ -45,7 +48,6 @@ function toOrder(
   arrival: ApiArrival,
   vehicleMap: Map<string, string>,
   driverMap: Map<string, string>,
-  index: number,
 ): Order {
   return {
     id: arrival.id,
@@ -57,7 +59,6 @@ function toOrder(
       ? new Date(arrival.time_to_arrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '—',
     status: API_TO_UI_STATUS[arrival.status] ?? 'Pending',
-    priority: index + 1,
     _raw: arrival,
   };
 }
@@ -70,15 +71,14 @@ export function LogistPage() {
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [employees, setEmployees] = useState<ApiEmployee[]>([]);
   const [deliveryPoints, setDeliveryPoints] = useState<ApiDeliveryPoint[]>([]);
+  const [requests, setRequests] = useState<ApiRequest[]>([]);
+  const [allProducts, setAllProducts] = useState<ApiProduct[]>([]);
   const [inventoryMap, setInventoryMap] = useState<Map<string, ApiProduct[]>>(new Map());
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [priorities, setPriorities] = useState<Map<string, number>>(new Map());
-
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
   const [selectedArrivalId, setSelectedArrivalId] = useState<string | null>(null);
   const [productsArrivalId, setProductsArrivalId] = useState<string | null>(null);
 
@@ -96,15 +96,10 @@ export function LogistPage() {
 
   // ── Derived order list (memoised) ─────────────────────────────────────────
   const orders = useMemo<Order[]>(() => {
-    return (arrivals || []).map((arrival, idx) => {
-      const order = toOrder(arrival, vehicleMap, driverMap, idx);
-      // Apply any user-reordered priorities
-      const overridePriority = priorities.get(arrival.id);
-      return overridePriority !== undefined
-        ? { ...order, priority: overridePriority }
-        : order;
+    return (arrivals || []).map((arrival) => {
+      return toOrder(arrival, vehicleMap, driverMap);
     });
-  }, [arrivals, vehicleMap, driverMap, priorities]);
+  }, [arrivals, vehicleMap, driverMap]);
 
   const selectedOrder = useMemo(
     () => orders.find(o => o.id === selectedArrivalId) ?? null,
@@ -116,12 +111,13 @@ export function LogistPage() {
     setLoading(true);
     setApiError(null);
     try {
-      const [arrivalsRes, vehiclesRes, employeesRes, dpRes, prodRes] = await Promise.all([
+      const [arrivalsRes, vehiclesRes, employeesRes, dpRes, prodRes, requestsRes] = await Promise.all([
         getArrivals(),
-        getVehicles(),
+        getVehicles(1, 100),
         getEmployees(1, 200),
         getDeliveryPoints(),
         getProducts(),
+        getRequests(),
       ]);
       
       const dps = dpRes?.data || [];
@@ -132,6 +128,8 @@ export function LogistPage() {
       setVehicles(vehiclesRes?.data || []);
       setEmployees(employeesRes?.data || []);
       setDeliveryPoints(dps);
+      setAllProducts(prods);
+      setRequests(requestsRes?.data || []);
       
       // Fetch SKUs asynchronously without blocking rendering
       Promise.all(
@@ -156,6 +154,7 @@ export function LogistPage() {
       setVehicles([]);
       setEmployees([]);
       setDeliveryPoints([]);
+      setRequests([]);
       setInventoryMap(new Map());
     } finally {
       setLoading(false);
@@ -202,12 +201,32 @@ export function LogistPage() {
     setIsEditModalOpen(false);
     setSelectedArrivalId(null);
   };
-
-  const handleSavePriority = (reordered: Order[]) => {
-    const newPriorities = new Map<string, number>();
-    reordered.forEach((o, idx) => newPriorities.set(o.id, idx + 1));
-    setPriorities(newPriorities);
+  
+  const handleAutoSort = async () => {
+    try {
+      setLoading(true);
+      const recommendedRes = await getRecommendedArrivalRequests();
+      const recommended = recommendedRes?.data || [];
+      
+      // We process them in parallel.
+      await Promise.all(recommended.map(async item => {
+        // 1. Create the dispatch mapping
+        await createArrivalRequest({
+          arrival_id: item.arrival_id,
+          request_id: item.request_id,
+          sku_ids: item.sku_ids || [],
+          priority: item.priority
+        });
+      }));
+      
+      await loadData();
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Auto-sort failed');
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   if (loading) {
     return (
@@ -260,54 +279,61 @@ export function LogistPage() {
       )}
 
       <div className="logist-split-layout">
+        {/* Top Row: Map and Orders */}
+        <div className="logist-top-row">
+          {/* Left — Map */}
+          <div className="map-panel">
+            <MapWidget orders={orders} deliveryPoints={deliveryPoints} inventoryMap={inventoryMap} vehicles={vehicles} />
+          </div>
 
-        {/* Left — Map */}
-        <div className="map-panel">
-          <MapWidget orders={orders} deliveryPoints={deliveryPoints} inventoryMap={inventoryMap} vehicles={vehicles} />
+          {/* Right — Orders */}
+          <div className="orders-panel">
+            <div className="panel-header">
+              <h3 className="panel-title">Active Orders</h3>
+              <button className="btn-primary" onClick={handleAddOrderClick}>
+                Add Order
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="loading-state">
+                <div className="spinner" />
+                <span>Loading arrivals…</span>
+              </div>
+            ) : apiError && !orders?.length ? (
+              <div style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8' }}>
+                <h3 style={{ marginBottom: '8px' }}>Please log in or try again</h3>
+                <p style={{ opacity: 0.7 }}>We couldn't load the active orders.</p>
+              </div>
+            ) : !orders?.length ? (
+              <div style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8' }}>
+                <h3 style={{ marginBottom: '8px' }}>No active orders</h3>
+                <p style={{ opacity: 0.7 }}>There are currently no orders in the system.</p>
+              </div>
+            ) : (
+              <OrderList
+                orders={orders || []}
+                onEditClick={handleEditOrderClick}
+                onProductsClick={handleProductsClick}
+              />
+            )}
+          </div>
         </div>
 
-        {/* Right — Orders */}
-        <div className="orders-panel">
+        {/* Bottom Row: All Requests */}
+        <div className="orders-panel requests-full-width">
           <div className="panel-header">
-            <h3 className="panel-title">Active Orders</h3>
-            <button className="btn-primary" onClick={handleAddOrderClick}>
-              Add Order
+            <h3 className="panel-title">All Requests (SKU) — {requests?.length || 0}</h3>
+            <button className="btn-secondary" onClick={handleAutoSort} disabled={loading} style={{ marginLeft: 'auto' }}>
+              AUTO SORT
             </button>
           </div>
 
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner" />
-              <span>Loading arrivals…</span>
-            </div>
-          ) : apiError && !orders?.length ? (
-            <div style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8' }}>
-              <h3 style={{ marginBottom: '8px' }}>Please log in or try again</h3>
-              <p style={{ opacity: 0.7 }}>We couldn't load the active orders.</p>
-            </div>
-          ) : !orders?.length ? (
-            <div style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8' }}>
-              <h3 style={{ marginBottom: '8px' }}>No active orders</h3>
-              <p style={{ opacity: 0.7 }}>There are currently no orders in the system.</p>
-            </div>
-          ) : (
-            <OrderList
-              orders={orders || []}
-              onEditClick={handleEditOrderClick}
-              onProductsClick={handleProductsClick}
-            />
-          )}
-
-          <div className="panel-footer">
-            <button
-              className="btn-secondary"
-              onClick={() => setIsPriorityModalOpen(true)}
-              style={{ width: '100%' }}
-              disabled={loading || (orders?.length || 0) === 0}
-            >
-              ✎ Edit Priority
-            </button>
-          </div>
+          <RequestList 
+            requests={requests} 
+            products={allProducts} 
+            deliveryPoints={deliveryPoints} 
+          />
         </div>
       </div>
 
@@ -318,13 +344,6 @@ export function LogistPage() {
         employees={(employees || []).filter(e => e.role === 'driver')}
         onClose={() => { setIsEditModalOpen(false); setSelectedArrivalId(null); }}
         onSave={handleSaveOrder}
-      />
-
-      <PriorityModal
-        orders={[...(orders || [])].sort((a, b) => a.priority - b.priority)}
-        isOpen={isPriorityModalOpen}
-        onClose={() => setIsPriorityModalOpen(false)}
-        onSavePriority={handleSavePriority}
       />
 
       <ProductsModal

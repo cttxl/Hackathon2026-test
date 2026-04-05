@@ -21,7 +21,7 @@ export function OrderList({ orders, onEditClick, onProductsClick }: OrderListPro
   if (!orders) return <div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px' }}>Loading or Access Denied...</div>;
 
   const safeOrders = orders || [];
-  const sortedOrders = [...safeOrders].sort((a, b) => (a.priority || 0) - (b.priority || 0));
+  const sortedOrders = safeOrders;
 
   if ((sortedOrders?.length || 0) === 0) {
     return (

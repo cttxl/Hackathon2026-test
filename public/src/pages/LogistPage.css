@@ -1,10 +1,28 @@
 .logist-split-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   flex: 1 1 0;
-  min-height: 0; /* allow grid to shrink inside the flex parent */
+  min-height: 0;
   width: 100%;
+  overflow-y: auto; /* allow the whole split layout to scroll down to requests */
+  padding: 20px;
+}
+
+.logist-top-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  /* Top row height: leave space for bottom panel to peek through */
+  height: calc(100vh - 250px); 
+  min-height: 400px;
+  flex-shrink: 0;
+}
+
+.requests-full-width {
+  width: 100%;
+  min-height: 300px;
+  flex-shrink: 0;
 }
 
 .map-panel {
@@ -55,9 +73,9 @@
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
-  flex: 1 1 0;  /* fills remaining space in panel */
-  min-height: 0;
-  padding-right: 8px; /* For scrollbar */
+  flex: 1; 
+  min-height: 300px;
+  padding-right: 8px;
 }
 
 .panel-footer {

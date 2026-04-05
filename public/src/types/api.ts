@@ -142,7 +142,14 @@ export interface ApiArrivalRequest {
   id: string;
   arrival_id: string;
   request_id: string;
-  sku_id: string;
+  sku_ids: string[];
+  priority: number;
+}
+
+export interface ApiCreateArrivalRequestEntry {
+  arrival_id: string;
+  request_id: string;
+  sku_ids: string[];
   priority: number;
 }
 
@@ -172,7 +179,6 @@ export interface Order {
   timeToDeparture: string;
   timeOfArrival: string;
   status: OrderStatus;
-  priority: number;
   /** Raw API arrival for edit/patch operations */
   _raw?: ApiArrival;
 }

@@ -100,26 +100,17 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 	for priority, arrIdx := range arrivalOrder {
 		reqIdxList := assignment[arrIdx]
 
-		seen := make(map[string]bool)
-		var skuIDs []string
 		for _, ri := range reqIdxList {
-			pid := requests[ri].productID
-			if !seen[pid] {
-				seen[pid] = true
-				skuIDs = append(skuIDs, pid)
-			}
+			req := requests[ri]
+			out = append(out, domain.ArrivalRequest{
+				ArrivalID: arrivals[arrIdx].arrivalID,
+				RequestID: req.requestID,
+				SkuIDs:    []string{req.skuID},
+				Priority:  priority + 1,
+				CreatedAt: now,
+				UpdatedAt: now,
+			})
 		}
-
-		primaryRequestID := requests[reqIdxList[0]].requestID
-
-		out = append(out, domain.ArrivalRequest{
-			ArrivalID: arrivals[arrIdx].arrivalID,
-			RequestID: primaryRequestID,
-			SkuIDs:    skuIDs,
-			Priority:  priority + 1,
-			CreatedAt: now,
-			UpdatedAt: now,
-		})
 	}
 
 	return out, nil
@@ -132,6 +123,7 @@ func GetRecommended(ctx context.Context, db *sql.DB) ([]domain.ArrivalRequest, e
 type pendingRequest struct {
 	requestID string
 	productID string
+	skuID     string
 	emergency string
 	quantity  int
 	createdAt time.Time
@@ -160,6 +152,7 @@ func fetchPendingRequests(ctx context.Context, db *sql.DB) ([]pendingRequest, er
 		SELECT
 			r.id          AS request_id,
 			r.product_id,
+			s.id          AS sku_id,
 			r.emergency,
 			r.quantity,
 			r.created_at,
@@ -171,6 +164,7 @@ func fetchPendingRequests(ctx context.Context, db *sql.DB) ([]pendingRequest, er
 		FROM  requests        r
 		JOIN  products        p  ON p.id  = r.product_id
 		JOIN  delivery_points dp ON dp.id = r.delivery_point_id
+		JOIN  sku             s  ON s.product_id = r.product_id AND s.delivery_point_id = r.delivery_point_id
 		WHERE r.status = 'pending'
 	`
 
@@ -186,6 +180,7 @@ func fetchPendingRequests(ctx context.Context, db *sql.DB) ([]pendingRequest, er
 		if err := rows.Scan(
 			&req.requestID,
 			&req.productID,
+			&req.skuID,
 			&req.emergency,
 			&req.quantity,
 			&req.createdAt,

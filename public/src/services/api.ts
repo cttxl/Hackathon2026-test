@@ -16,6 +16,7 @@ import type {
   ApiRequest,
   RequestStatus,
   ApiListResponse,
+  ApiCreateArrivalRequestEntry,
 } from '../types/api';
 
 // In production (Docker), VITE_API_BASE_URL is '' → relative URLs proxied by nginx.
@@ -92,8 +93,8 @@ export async function resetEmployeePassword(id: string): Promise<void> {
 
 // ─── Vehicles ────────────────────────────────────────────────────────────────
 
-export async function getVehicles(): Promise<ApiListResponse<ApiVehicle>> {
-  return apiFetch<ApiListResponse<ApiVehicle>>('/vehicles?limit=100');
+export async function getVehicles(page = 1, limit = 100): Promise<ApiListResponse<ApiVehicle>> {
+  return apiFetch<ApiListResponse<ApiVehicle>>(`/vehicles?page=${page}&limit=${limit}`);
 }
 
 // ─── Delivery Points ─────────────────────────────────────────────────────────
@@ -137,6 +138,17 @@ export async function patchArrival(id: string, data: ApiUpdateArrivalRequest): P
 
 export async function getArrivalRequests(arrivalId: string): Promise<ApiListResponse<ApiArrivalRequest>> {
   return apiFetch<ApiListResponse<ApiArrivalRequest>>(`/arrivals-requests?arrival_id=${arrivalId}&limit=100`);
+}
+
+export async function createArrivalRequest(data: ApiCreateArrivalRequestEntry): Promise<ApiArrivalRequest> {
+  return apiFetch<ApiArrivalRequest>('/arrivals-requests', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getRecommendedArrivalRequests(): Promise<ApiListResponse<ApiArrivalRequest>> {
+  return apiFetch<ApiListResponse<ApiArrivalRequest>>('/arrivals-requests/recommended');
 }
 
 // ─── SKU / Requests ──────────────────────────────────────────────────────────

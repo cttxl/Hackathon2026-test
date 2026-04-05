@@ -36,7 +36,6 @@ export function EditOrderModal({
         timeToDeparture: 'N/A',
         timeOfArrival: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         status: 'Pending',
-        priority: 99,
         // Store raw IDs for POST /arrivals
         _raw: {
           id: '',
